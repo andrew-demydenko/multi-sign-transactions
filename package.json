@@ -16,7 +16,7 @@
     "start": "turbo run start",
     "prepare": "husky install",
     "lint": "turbo run lint --continue --",
-    "format": "turbo run format"
+    "format": "turbo run format --"
   },
   "lint-staged": {
     "*.ts": [

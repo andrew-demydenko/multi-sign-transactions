@@ -14,6 +14,8 @@ dist-ssr
 .vite
 .turbo
 .env
+prisma/migrations
+prisma/data.db
 
 # Editor directories and files
 .vscode/*
