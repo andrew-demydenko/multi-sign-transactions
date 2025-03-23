@@ -8,6 +8,7 @@ const project = resolve(process.cwd(), "tsconfig.json");
 
 export default eslintTs.config(
   {
+    ignores: ["dist", "node_modules"],
     languageOptions: {
       parserOptions: {
         projectService: true,
