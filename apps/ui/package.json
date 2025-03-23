@@ -1,0 +1,39 @@
+{
+  "name": "multi-sign-transactions-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint --ext .ts,.tsx src",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@radix-ui/react-toast": "^1.2.6",
+    "@radix-ui/themes": "^3.2.1",
+    "class-variance-authority": "^0.7.1",
+    "ethers": "^6.13.5",
+    "hardhat": "^2.22.19",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-variants": "^1.0.0"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@typescript-eslint/eslint-plugin": "^8.27.0",
+    "@typescript-eslint/parser": "^8.27.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.2.0"
+  }
+}

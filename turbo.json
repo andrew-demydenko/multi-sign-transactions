@@ -1,0 +1,30 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "dev": {
+      "dependsOn": ["^dev"],
+      "cache": false,
+      "persistent": true,
+      "env": ["PORT"]
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "env": ["PORT"]
+    },
+    "start": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "env": ["PORT"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"],
+      "cache": false,
+      "env": ["PORT"]
+    },
+    "format": {
+      "dependsOn": ["^format"],
+      "cache": false
+    }
+  }
+}
