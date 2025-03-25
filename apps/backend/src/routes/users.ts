@@ -33,29 +33,19 @@ router.get(
 );
 
 router.post("/", async (req: Request<User>, res: Response) => {
-  const { name, userAddress } = req.body;
+  const { userAddress, name } = req.body;
 
   if (!userAddress) {
     return res.status(400).json({ error: "walletAddress is required" });
   }
 
   try {
-    const existingUser = await prisma.user.findUnique({
+    const user = await prisma.user.upsert({
       where: { userAddress },
+      update: { name: name || "" },
+      create: { userAddress },
     });
-
-    if (existingUser) {
-      return res.status(400).json({ error: "User already exists" });
-    }
-
-    const newUser = await prisma.user.create({
-      data: {
-        name,
-        userAddress,
-      },
-    });
-
-    res.status(201).json(newUser);
+    res.status(201).json(user);
   } catch (error) {
     res.status(500).json({ error: "Error creating user", reason: error });
   }

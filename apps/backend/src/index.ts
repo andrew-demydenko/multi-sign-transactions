@@ -4,6 +4,7 @@ import "dotenv/config";
 import usersRouter from "@/routes/users";
 import transactionsRouter from "@/routes/transactions";
 import walletsRouter from "@/routes/wallets";
+import "@/prisma";
 
 const app = express();
 app.use(cors());

@@ -4,20 +4,36 @@ import { PrismaClient, Wallet } from "@prisma/client";
 const prisma = new PrismaClient();
 const router = Router();
 
-router.get("/", async (_, res: Response) => {
-  try {
-    const wallets = await prisma.wallet.findMany({
-      include: {
-        owners: true,
-      },
-    });
-    res.json(wallets);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error while wallets getting", reason: error });
+router.get(
+  "/user/:userAddress",
+  async (req: Request<{ userAddress: string }>, res: Response) => {
+    const { userAddress } = req.params;
+
+    if (!userAddress) {
+      return res.status(400).json({ error: "User address is required" });
+    }
+
+    try {
+      const wallets = await prisma.wallet.findMany({
+        where: {
+          owners: {
+            some: {
+              userAddress,
+            },
+          },
+        },
+        include: {
+          owners: true,
+        },
+      });
+      res.json(wallets);
+    } catch (error) {
+      res
+        .status(500)
+        .json({ error: "Error while wallets getting", reason: error });
+    }
   }
-});
+);
 
 router.get(
   "/:walletAddress",
@@ -47,32 +63,36 @@ router.get(
 );
 
 router.post("/", async (req: Request<Wallet>, res: Response) => {
-  const { users, minimumSignatures } = req.body;
+  const { owners, requiredSignatures, walletAddress } = req.body;
 
-  if (!users || users.length === 0) {
+  if (!owners || owners.length === 0) {
     return res.status(400).json({ error: "users are required" });
   }
 
-  if (!minimumSignatures) {
-    return res.status(400).json({ error: "minimumSignatures is required" });
+  if (!requiredSignatures) {
+    return res.status(400).json({ error: "requiredSignatures is required" });
   }
 
-  if (users.length < minimumSignatures) {
+  if (owners.length < requiredSignatures) {
     return res.status(400).json({
       error:
-        "minimumSignatures must be less than or equal to the number of users",
+        "requiredSignatures must be less than or equal to the number of users",
     });
   }
 
   try {
-    // Создание кошелька
     const newWallet = await prisma.wallet.create({
       data: {
-        walletAddress: `${Date.now()}`,
-        minimumSignatures,
+        walletAddress,
+        requiredSignatures,
         owners: {
-          create: users.map((userAddress: string) => ({
-            userAddress,
+          create: owners.map((userAddress: string) => ({
+            user: {
+              connectOrCreate: {
+                where: { userAddress },
+                create: { userAddress },
+              },
+            },
           })),
         },
       },

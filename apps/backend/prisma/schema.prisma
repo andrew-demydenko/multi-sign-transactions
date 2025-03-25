@@ -9,15 +9,15 @@ datasource db {
 
 model User {
   userAddress String       @id
-  name        String
+  name        String?      @default("")
   wallets     WalletUser[]
 }
 
 model Wallet {
-  walletAddress     String        @id
-  minimumSignatures Int
-  transactions      Transaction[]
-  owners            WalletUser[]
+  walletAddress      String        @id
+  requiredSignatures Int
+  transactions       Transaction[]
+  owners             WalletUser[]
 }
 
 model Transaction {

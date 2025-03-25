@@ -5,6 +5,7 @@ contract MultiSigWallet {
     address[] public owners;
     mapping(address => bool) public isOwner;
     uint public requiredSignatures;
+    bool public isLocked = false; // Флаг для блокировки контракта
 
     struct Transaction {
         address to;
@@ -12,6 +13,7 @@ contract MultiSigWallet {
         bytes data;
         bool executed;
         uint numConfirmations;
+        bool isDestroy; // Флаг для удаления контракта
     }
 
     Transaction[] public transactions;
@@ -22,6 +24,11 @@ contract MultiSigWallet {
         address indexed owner,
         uint indexed txIndex,
         address indexed to,
+        uint value
+    );
+    event SubmitLockTrasaction(
+        address indexed owner,
+        uint indexed txIndex,
         uint value
     );
     event ConfirmTransaction(address indexed owner, uint indexed txIndex);
@@ -47,7 +54,12 @@ contract MultiSigWallet {
         _;
     }
 
-    constructor(address[] memory _owners, uint _requiredSignatures) {
+    modifier notLocked() {
+        require(!isLocked, "Contract is locked");
+        _;
+    }
+
+    constructor(address[] memory _owners, uint _requiredSignatures) payable {
         require(_owners.length > 0, "Owners required");
         require(
             _requiredSignatures > 0 && _requiredSignatures <= _owners.length,
@@ -70,11 +82,28 @@ contract MultiSigWallet {
         emit Deposit(msg.sender, msg.value);
     }
 
+    function submitLockTrasaction() public onlyOwner notLocked {
+        uint txIndex = transactions.length;
+
+        transactions.push(
+            Transaction({
+                to: address(0),
+                value: 0,
+                data: "",
+                executed: false,
+                numConfirmations: 0,
+                isDestroy: true
+            })
+        );
+
+        emit SubmitLockTrasaction(msg.sender, txIndex, address(this).balance);
+    }
+
     function submitTransaction(
         address _to,
         uint _value,
         bytes memory _data
-    ) public onlyOwner {
+    ) public onlyOwner notLocked {
         uint txIndex = transactions.length;
         transactions.push(
             Transaction({
@@ -82,7 +111,8 @@ contract MultiSigWallet {
                 value: _value,
                 data: _data,
                 executed: false,
-                numConfirmations: 0
+                numConfirmations: 0,
+                isDestroy: false
             })
         );
 
@@ -97,32 +127,53 @@ contract MultiSigWallet {
         txExists(_txIndex)
         notExecuted(_txIndex)
         notConfirmed(_txIndex)
+        notLocked
     {
         confirmations[_txIndex][msg.sender] = true;
         transactions[_txIndex].numConfirmations++;
 
         emit ConfirmTransaction(msg.sender, _txIndex);
 
-        if (transactions[_txIndex].numConfirmations >= requiredSignatures) {
+        Transaction storage transaction = transactions[_txIndex];
+        uint requiredConfirmations = transaction.isDestroy
+            ? owners.length
+            : requiredSignatures;
+        if (transaction.numConfirmations >= requiredConfirmations) {
             executeTransaction(_txIndex);
         }
     }
 
     function executeTransaction(
         uint _txIndex
-    ) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
-        require(
-            transactions[_txIndex].numConfirmations >= requiredSignatures,
-            "Not enough confirmations"
-        );
-
+    ) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) notLocked {
         Transaction storage transaction = transactions[_txIndex];
 
+        if (transaction.isDestroy) {
+            require(
+                transaction.numConfirmations == owners.length,
+                "Not all owners have confirmed for destroy"
+            );
+        } else {
+            require(
+                transaction.numConfirmations >= requiredSignatures,
+                "Not enough confirmations"
+            );
+        }
+
         transaction.executed = true;
-        (bool success, ) = transaction.to.call{value: transaction.value}(
-            transaction.data
-        );
-        require(success, "Tx failed");
+
+        if (transaction.isDestroy) {
+            isLocked = true; // Блокируем контракт
+            (bool success, ) = payable(msg.sender).call{
+                value: address(this).balance
+            }("");
+            require(success, "Tx failed during destroy");
+        } else {
+            (bool success, ) = payable(transaction.to).call{
+                value: transaction.value
+            }(transaction.data);
+            require(success, "Tx failed");
+        }
 
         emit ExecuteTransaction(msg.sender, _txIndex);
     }
@@ -135,6 +186,10 @@ contract MultiSigWallet {
         return transactions.length;
     }
 
+    function getBalance() public view returns (uint) {
+        return address(this).balance;
+    }
+
     function getTransaction(
         uint _txIndex
     )
@@ -145,7 +200,8 @@ contract MultiSigWallet {
             uint value,
             bytes memory data,
             bool executed,
-            uint numConfirmations
+            uint numConfirmations,
+            bool isDestroy
         )
     {
         Transaction storage transaction = transactions[_txIndex];
@@ -154,7 +210,8 @@ contract MultiSigWallet {
             transaction.value,
             transaction.data,
             transaction.executed,
-            transaction.numConfirmations
+            transaction.numConfirmations,
+            transaction.isDestroy
         );
     }
 }
