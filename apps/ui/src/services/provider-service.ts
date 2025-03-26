@@ -68,7 +68,7 @@ export const createWallet = async ({
 interface IDeployWalletParams {
   owners: string[];
   requiredSignatures: number;
-  provider: ethers.JsonRpcProvider;
+  provider: ethers.BrowserProvider;
   signer: ethers.Signer;
 }
 
@@ -82,7 +82,15 @@ export const deployMultiSignWallet = async ({
   owners,
   requiredSignatures,
   signer,
+  provider,
 }: IDeployWalletParams): Promise<IDeployWalletResponse> => {
+  const network = await provider.getNetwork();
+  const requiredNetwork = import.meta.env.VITE_NETWORK;
+
+  if (network.name !== requiredNetwork) {
+    throw new Error(`Change network on (${requiredNetwork})`);
+  }
+
   const factory = new ethers.ContractFactory(
     MultiSigWalletArtifact.abi,
     MultiSigWalletArtifact.bytecode,
@@ -99,10 +107,13 @@ export const deployMultiSignWallet = async ({
   return { contractAddress, receipt, balance: 0 };
 };
 
-export const getBalance = async (
-  contractAddress: string,
-  provider: ethers.Provider
-): Promise<string> => {
+export const getBalance = async ({
+  contractAddress,
+  provider,
+}: {
+  contractAddress: string;
+  provider: ethers.BrowserProvider;
+}): Promise<string> => {
   const balance = await provider.getBalance(contractAddress);
   return ethers.formatEther(balance);
 };

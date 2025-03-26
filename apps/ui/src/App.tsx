@@ -1,15 +1,14 @@
 import "./App.css";
 import Transactions from "@components/Transactions";
 import MultiSignWalletCreation from "@/components/WalletCreation";
-import { useUserStore } from "@/stores/user-store";
+import { useAppStore } from "@/stores/app-store";
 import { useUserInitiazation, useConnectWallet } from "./hooks/user-hooks";
+import { getBalance } from "./services/provider-service";
 
 const Home = () => {
   const { isLoading } = useUserInitiazation();
-  const { userAddress, balance } = useUserStore();
+  const { userAddress, balance, provider } = useAppStore();
   const { mutate: connectWallet, isPending: isConnecting } = useConnectWallet();
-
-  console.log(userAddress, balance);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
@@ -32,6 +31,23 @@ const Home = () => {
         </div>
       )}
       <MultiSignWalletCreation />
+      <button
+        onClick={async () => {
+          if (provider) {
+            const r = await getBalance({
+              contractAddress: "0x1e9080eaa655b3272073f7cc02f6592c1c06f310",
+              provider,
+            });
+            console.log(r);
+          }
+        }}
+      >
+        Получить баланс
+      </button>
+      <div className="text-center mt-4">
+        <span className="m-2">Working network</span>
+        {import.meta.env.VITE_NETWORK?.toUpperCase()}
+      </div>
     </div>
   );
 };

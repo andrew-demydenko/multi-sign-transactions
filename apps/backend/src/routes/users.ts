@@ -36,14 +36,15 @@ router.post("/", async (req: Request<User>, res: Response) => {
   const { userAddress, name } = req.body;
 
   if (!userAddress) {
-    return res.status(400).json({ error: "walletAddress is required" });
+    return res.status(400).json({ error: "userAddress is required" });
   }
+  const userName = name || "";
 
   try {
     const user = await prisma.user.upsert({
       where: { userAddress },
-      update: { name: name || "" },
-      create: { userAddress },
+      update: { name: userName },
+      create: { userAddress, name: userName },
     });
     res.status(201).json(user);
   } catch (error) {
