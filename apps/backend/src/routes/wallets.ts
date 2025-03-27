@@ -23,10 +23,24 @@ router.get(
           },
         },
         include: {
-          owners: true,
+          owners: {
+            include: { user: true },
+          },
         },
       });
-      res.json(wallets);
+
+      try {
+        res.json(
+          wallets.map((wallet) => ({
+            ...wallet,
+            owners: wallet.owners.map((owner) => owner.user),
+          }))
+        );
+      } catch (error) {
+        res
+          .status(500)
+          .json({ error: "Error while wallets getting", reason: error });
+      }
     } catch (error) {
       res
         .status(500)

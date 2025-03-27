@@ -81,4 +81,6 @@ export const disconnectMetaMask = () => {
   localStorage.removeItem("isConnected");
   localStorage.removeItem("userAddress");
   localStorage.removeItem("network");
+
+  window.location.reload();
 };

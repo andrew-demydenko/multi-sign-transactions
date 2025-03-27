@@ -24,7 +24,7 @@ export default eslintTs.config(
       "typescript-eslint": typescriptPlugin,
     },
     rules: {
-      "no-console": "warn",
+      "no-console": "off",
     },
   }
 );
