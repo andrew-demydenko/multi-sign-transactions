@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { IUser } from "@/services/user-service";
+import { IUser } from "@/types";
 import { IMetaMaskSession } from "@/services/metamask-service";
 
 interface IAppStore extends IMetaMaskSession, IUser {

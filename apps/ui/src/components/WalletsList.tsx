@@ -1,12 +1,19 @@
 import { useState, useCallback } from "react";
 import TransactionsModal from "./TransactionsModal";
 import WalletItem from "./WalletItem";
+import TransactionCreation from "./TransactionCreation";
 import { useAppStore } from "@/stores/app-store";
-import { fetchUserWallets } from "@/services/provider-service";
+import { fetchUserWallets } from "@/services/wallet-service";
 import { useQuery } from "@tanstack/react-query";
 
 const WalletsList = () => {
-  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+  const [walletForTransactionsModal, setWalletForTransactionsModal] = useState<
+    string | null
+  >(null);
+  const [
+    walletForTransactionCreationModal,
+    setWalletForTransactionCreationModal,
+  ] = useState<string | null>(null);
   const userAddress = useAppStore((state) => state.userAddress);
   const { data: wallets, isLoading } = useQuery({
     queryKey: ["wallets", userAddress],
@@ -19,8 +26,21 @@ const WalletsList = () => {
     enabled: !!userAddress,
   });
 
-  const viewTransactions = useCallback((walletAddress: string) => {
-    setSelectedWallet(walletAddress);
+  const showTransactions = useCallback((walletAddress: string) => {
+    setWalletForTransactionsModal(walletAddress);
+  }, []);
+
+  const showTransactionCreation = useCallback((walletAddress: string) => {
+    console.log(walletAddress);
+    setWalletForTransactionCreationModal(walletAddress);
+  }, []);
+
+  const closeTransactionsModal = useCallback(() => {
+    setWalletForTransactionsModal(null);
+  }, []);
+
+  const closeTransactionCreationModal = useCallback(() => {
+    setWalletForTransactionCreationModal(null);
   }, []);
 
   if (isLoading) {
@@ -39,15 +59,20 @@ const WalletsList = () => {
             <WalletItem
               key={wallet.walletAddress || index}
               wallet={wallet}
-              onViewTransactions={viewTransactions}
+              showTransactions={showTransactions}
+              showTransactionCreation={showTransactionCreation}
             />
           ))}
         </div>
       )}
 
       <TransactionsModal
-        walletAddress={selectedWallet}
-        onClose={() => setSelectedWallet(null)}
+        walletAddress={walletForTransactionsModal}
+        onClose={closeTransactionsModal}
+      />
+      <TransactionCreation
+        walletAddress={walletForTransactionCreationModal}
+        onClose={closeTransactionCreationModal}
       />
     </div>
   );

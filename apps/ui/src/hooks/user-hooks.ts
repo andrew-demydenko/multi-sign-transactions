@@ -5,6 +5,7 @@ import {
   disconnectMetaMask,
   createInfuraProvider,
 } from "@/services/metamask-service";
+import { processPendingTxs } from "@/services/provider-service";
 import { useEffect } from "react";
 import { ethers } from "ethers";
 import { useAppStore } from "@/stores/app-store";
@@ -107,6 +108,8 @@ export const useUserInitiazation = () => {
   useEffect(() => {
     if (restoreSessionQuery.data) {
       setData(restoreSessionQuery.data);
+
+      processPendingTxs();
     }
   }, [restoreSessionQuery.data, setData]);
 

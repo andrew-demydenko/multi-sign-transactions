@@ -1,19 +1,18 @@
 import { ethers } from "ethers";
-
-type Nullable<T> = T | null;
+import { TProvider, TSigner, TInfuraProvider } from "@/types";
 
 export interface IMetaMaskSession {
-  provider: Nullable<ethers.BrowserProvider>;
-  signer: Nullable<ethers.JsonRpcSigner>;
+  provider: TProvider;
+  signer: TSigner;
   network: string;
   userAddress: string;
-  infuraProvider: Nullable<ethers.InfuraProvider>;
+  infuraProvider: TInfuraProvider;
 }
 
 export const restoreMetamaskSession =
   async (): Promise<IMetaMaskSession | null> => {
     const isConnected = localStorage.getItem("isConnected");
-    if (isConnected === "true") {
+    if (window.ethereum && isConnected === "true") {
       const userAddress = localStorage.getItem("userAddress");
       const network = localStorage.getItem("network");
 

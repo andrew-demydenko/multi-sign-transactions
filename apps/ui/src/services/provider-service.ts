@@ -1,10 +1,12 @@
 import { ethers } from "ethers";
 import MultiSigWalletArtifact from "@/multi-sign-wallet-artifact.json";
-import { IUser } from "./user-service";
+import { createWallet, deleteWallet } from "./wallet-service";
+import { showGlobalToast } from "@/lib/toast";
+import { IWallet, TProvider, TSigner } from "@/types";
 
 const getContract = (
   contractAddress: string,
-  provider: ethers.Signer | ethers.BrowserProvider
+  provider: TSigner | TProvider
 ) => {
   return new ethers.Contract(
     contractAddress,
@@ -22,16 +24,9 @@ interface ITransaction {
   isDestroy: boolean;
 }
 
-export interface IWallet {
-  owners: string[];
-  requiredSignatures: number;
-  transactions?: ITransaction[];
-  walletAddress: string;
-}
-
 interface PendingTx {
   hash: string;
-  type: "deploy" | "transfer";
+  type: "deploy" | "transfer" | "destroy";
   data: Partial<IWallet>;
 }
 
@@ -69,8 +64,21 @@ export const processPendingTxs = async () => {
                 owners,
                 walletAddress: contractAddress,
               });
+              showGlobalToast({
+                type: "success",
+                message: "Wallet is created successfully",
+              });
             }
 
+            break;
+          case "destroy":
+            if (receipt.contractAddress) {
+              await deleteWallet({
+                walletAddress: receipt.contractAddress,
+              });
+            }
+
+            showGlobalToast({ type: "success", message: "Wallet is locked" });
             break;
         }
         removePendingTx(tx.hash);
@@ -84,52 +92,11 @@ export const processPendingTxs = async () => {
   }
 };
 
-export const fetchWallet = async (walletAddress: string): Promise<IWallet> => {
-  const response = await fetch(
-    `${import.meta.env.VITE_SERVER_URL}/api/wallets/${walletAddress}`
-  );
-  if (!response.ok) throw new Error("Failed to fetch user");
-  return response.json();
-};
-
-export interface WalletResponse extends Omit<IWallet, "owners"> {
-  owners: IUser[];
-}
-
-export const fetchUserWallets = async (
-  userAddress: string
-): Promise<WalletResponse[]> => {
-  const response = await fetch(
-    `${import.meta.env.VITE_SERVER_URL}/api/wallets/user/${userAddress}`
-  );
-  if (!response.ok) throw new Error("Failed to fetch user");
-  return response.json();
-};
-
-export const createWallet = async ({
-  walletAddress,
-  owners,
-  requiredSignatures,
-}: IWallet): Promise<IWallet> => {
-  const response = await fetch(
-    `${import.meta.env.VITE_SERVER_URL}/api/wallets`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ walletAddress, owners, requiredSignatures }),
-    }
-  );
-  if (!response.ok) throw new Error("Failed to create wallet");
-  return response.json();
-};
-
 interface IDeployWalletParams {
   owners: string[];
   requiredSignatures: number;
-  provider: ethers.BrowserProvider;
-  signer: ethers.Signer;
+  provider: TProvider;
+  signer: TSigner;
 }
 
 interface IDeployWalletResponse {
@@ -144,42 +111,53 @@ export const deployMultiSignWallet = async ({
   signer,
   provider,
 }: IDeployWalletParams): Promise<IDeployWalletResponse> => {
-  const network = await provider.getNetwork();
-  const requiredNetwork = import.meta.env.VITE_NETWORK;
+  try {
+    if (!provider) {
+      throw new Error("Signer is not available");
+    }
+    const network = await provider.getNetwork();
+    const requiredNetwork = import.meta.env.VITE_NETWORK;
 
-  if (network.name !== requiredNetwork) {
-    throw new Error(`Change network on (${requiredNetwork})`);
-  }
+    if (network.name !== requiredNetwork) {
+      throw new Error(`Change network on (${requiredNetwork})`);
+    }
 
-  const factory = new ethers.ContractFactory(
-    MultiSigWalletArtifact.abi,
-    MultiSigWalletArtifact.bytecode,
-    signer
-  );
+    const factory = new ethers.ContractFactory(
+      MultiSigWalletArtifact.abi,
+      MultiSigWalletArtifact.bytecode,
+      signer
+    );
 
-  const contract = await factory.deploy(owners, requiredSignatures, {
-    value: ethers.parseEther("0"),
-  });
-  const deploymentTransaction = contract.deploymentTransaction();
-
-  if (deploymentTransaction?.hash) {
-    savePendingTx({
-      hash: deploymentTransaction.hash,
-      type: "deploy",
-      data: { owners, requiredSignatures },
+    const contract = await factory.deploy(owners, requiredSignatures, {
+      value: ethers.parseEther("0"),
     });
+    const deploymentTransaction = contract.deploymentTransaction();
+
+    if (deploymentTransaction?.hash) {
+      savePendingTx({
+        hash: deploymentTransaction.hash,
+        type: "deploy",
+        data: { owners, requiredSignatures },
+      });
+    }
+
+    const receipt = (await deploymentTransaction?.wait()) || null;
+    const contractAddress = await contract.getAddress();
+
+    await createWallet({
+      walletAddress: contractAddress,
+      owners,
+      requiredSignatures,
+    });
+    showGlobalToast({
+      type: "success",
+      message: "Wallet is created successfully",
+    });
+
+    return { contractAddress, receipt, balance: 0 };
+  } catch (error) {
+    throw new Error(`Could not deploy wallet. ${error}`);
   }
-
-  const receipt = (await deploymentTransaction?.wait()) || null;
-  const contractAddress = await contract.getAddress();
-
-  await createWallet({
-    walletAddress: contractAddress,
-    owners,
-    requiredSignatures,
-  });
-
-  return { contractAddress, receipt, balance: 0 };
 };
 
 export const getBalance = async ({
@@ -187,10 +165,16 @@ export const getBalance = async ({
   provider,
 }: {
   contractAddress: string;
-  provider: ethers.BrowserProvider;
+  provider: TProvider;
 }): Promise<string> => {
-  const balance = await provider.getBalance(contractAddress);
-  return ethers.formatEther(balance);
+  try {
+    const contract = getContract(contractAddress, provider);
+    const balance = await contract.getBalance();
+    return ethers.formatEther(balance);
+  } catch (error) {
+    console.error("Error while getting balance", error);
+    return "0";
+  }
 };
 
 export const submitTransaction = async ({
@@ -204,10 +188,19 @@ export const submitTransaction = async ({
   to: string;
   value: string;
   data: string;
-  signer: ethers.Signer;
+  signer: TSigner;
 }): Promise<ethers.ContractTransaction> => {
-  const contract = getContract(contractAddress, signer);
-  return await contract.submitTransaction(to, ethers.parseEther(value), data);
+  try {
+    const contract = getContract(contractAddress, signer);
+    return await contract.submitTransaction(
+      to,
+      ethers.parseEther(value),
+      data || "0x"
+    );
+  } catch (error) {
+    showGlobalToast({ type: "error", message: "Could not create transaction" });
+    throw new Error(`Could not create transaction. ${error}`);
+  }
 };
 
 export const submitLockTransaction = async ({
@@ -215,10 +208,18 @@ export const submitLockTransaction = async ({
   signer,
 }: {
   contractAddress: string;
-  signer: ethers.Signer;
+  signer: TSigner;
 }): Promise<ethers.ContractTransaction> => {
-  const contract = getContract(contractAddress, signer);
-  return await contract.submitLockTrasaction();
+  try {
+    const contract = getContract(contractAddress, signer);
+    return await contract.submitLockTrasaction();
+  } catch (error) {
+    showGlobalToast({
+      type: "error",
+      message: "Could not create lock transaction",
+    });
+    throw new Error(`Could not create lock transaction. ${error}`);
+  }
 };
 
 export const confirmTransaction = async ({
@@ -228,10 +229,20 @@ export const confirmTransaction = async ({
 }: {
   contractAddress: string;
   txIndex: number;
-  signer: ethers.Signer;
+  signer: TSigner;
 }): Promise<ethers.ContractTransaction> => {
-  const contract = getContract(contractAddress, signer);
-  return await contract.confirmTransaction(txIndex);
+  try {
+    const contract = getContract(contractAddress, signer);
+    const result = await contract.confirmTransaction(txIndex);
+    showGlobalToast({ type: "success", message: "Transaction is confirmed" });
+    return result;
+  } catch (error) {
+    showGlobalToast({
+      type: "error",
+      message: "Could not confirm transaction",
+    });
+    throw new Error(`Could not confirm transaction. ${error}`);
+  }
 };
 
 export const getTransactions = async ({
@@ -239,7 +250,7 @@ export const getTransactions = async ({
   provider,
 }: {
   contractAddress: string;
-  provider: ethers.BrowserProvider;
+  provider: TProvider;
 }): Promise<ITransaction[]> => {
   const contract = getContract(contractAddress, provider);
   try {
@@ -271,16 +282,20 @@ export const getTransaction = async ({
 }: {
   contractAddress: string;
   txIndex: number;
-  provider: ethers.BrowserProvider;
+  provider: TProvider;
 }): Promise<ITransaction> => {
-  const contract = getContract(contractAddress, provider);
-  const tx = await contract.getTransaction(txIndex);
-  return {
-    to: tx[0],
-    value: ethers.formatEther(tx[1]),
-    data: tx[2],
-    executed: tx[3],
-    numConfirmations: tx[4],
-    isDestroy: tx[5],
-  };
+  try {
+    const contract = getContract(contractAddress, provider);
+    const tx = await contract.getTransaction(txIndex);
+    return {
+      to: tx[0],
+      value: ethers.formatEther(tx[1]),
+      data: tx[2],
+      executed: tx[3],
+      numConfirmations: tx[4],
+      isDestroy: tx[5],
+    };
+  } catch (error) {
+    throw new Error(`Could not fetch transaction. ${error}`);
+  }
 };
