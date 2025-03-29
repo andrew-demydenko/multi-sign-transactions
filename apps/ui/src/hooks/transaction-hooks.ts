@@ -1,16 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
-import { fetchTransactions } from "@/services/transaction-service";
+import { getTransactions } from "@/services/provider-service";
 
-export const useFetchTransactions = () => {
-  const userAddress = useAppStore((state) => state.userAddress);
+export const useFetchTransactions = ({
+  walletAddress,
+}: {
+  walletAddress: string | null;
+}) => {
+  const provider = useAppStore((state) => state.provider);
 
   const fetchTransactionsQuery = useQuery({
-    queryKey: ["transactions", userAddress],
-    queryFn: () => fetchTransactions(userAddress!),
-    staleTime: 10000,
-    enabled: !!userAddress,
-    retry: 0,
+    queryKey: ["transactions", walletAddress],
+    queryFn: () => {
+      if (!walletAddress || !provider) return Promise.resolve([]);
+      return getTransactions({ contractAddress: walletAddress, provider });
+    },
+    staleTime: 1000 * 60,
+    enabled: !!walletAddress && !!provider,
   });
 
   return fetchTransactionsQuery;

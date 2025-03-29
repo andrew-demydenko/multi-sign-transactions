@@ -48,7 +48,7 @@ const WalletsList = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div>
       <h2 className="text-xl font-semibold">Multi Sign Wallets</h2>
 
       {wallets?.length === 0 ? (

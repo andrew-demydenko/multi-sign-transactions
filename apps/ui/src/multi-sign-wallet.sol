@@ -5,7 +5,7 @@ contract MultiSigWallet {
     address[] public owners;
     mapping(address => bool) public isOwner;
     uint public requiredSignatures;
-    bool public isLocked = false; // Флаг для блокировки контракта
+    bool public isLocked = false;
 
     struct Transaction {
         address to;
@@ -13,7 +13,7 @@ contract MultiSigWallet {
         bytes data;
         bool executed;
         uint numConfirmations;
-        bool isDestroy; // Флаг для удаления контракта
+        bool isDestroy;
     }
 
     Transaction[] public transactions;
@@ -96,14 +96,15 @@ contract MultiSigWallet {
             })
         );
 
-        emit SubmitLockTrasaction(msg.sender, txIndex, address(this).balance);
+        emit SubmitLockTrasaction(msg.sender, txIndex, getBalance());
     }
-
     function submitTransaction(
         address _to,
         uint _value,
         bytes memory _data
     ) public onlyOwner notLocked {
+        require(getBalance() >= _value, "Insufficient contract balance");
+
         uint txIndex = transactions.length;
         transactions.push(
             Transaction({
@@ -117,6 +118,39 @@ contract MultiSigWallet {
         );
 
         emit SubmitTransaction(msg.sender, txIndex, _to, _value);
+    }
+
+    function _executeTransaction(uint _txIndex) private {
+        Transaction storage transaction = transactions[_txIndex];
+
+        if (transaction.isDestroy) {
+            require(
+                transaction.numConfirmations == owners.length,
+                "Not all owners confirmed"
+            );
+        } else {
+            require(
+                transaction.numConfirmations >= requiredSignatures,
+                "Not enough confirmations"
+            );
+        }
+
+        transaction.executed = true;
+
+        if (transaction.isDestroy) {
+            isLocked = true;
+            (bool success, ) = payable(msg.sender).call{value: getBalance()}(
+                ""
+            );
+            require(success, "Destroy failed");
+        } else {
+            (bool success, ) = payable(transaction.to).call{
+                value: transaction.value
+            }(transaction.data);
+            require(success, "Tx failed");
+        }
+
+        emit ExecuteTransaction(msg.sender, _txIndex);
     }
 
     function confirmTransaction(
@@ -139,7 +173,7 @@ contract MultiSigWallet {
             ? owners.length
             : requiredSignatures;
         if (transaction.numConfirmations >= requiredConfirmations) {
-            executeTransaction(_txIndex);
+            _executeTransaction(_txIndex);
         }
     }
 
@@ -147,35 +181,14 @@ contract MultiSigWallet {
         uint _txIndex
     ) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) notLocked {
         Transaction storage transaction = transactions[_txIndex];
-
-        if (transaction.isDestroy) {
-            require(
-                transaction.numConfirmations == owners.length,
-                "Not all owners have confirmed for destroy"
-            );
-        } else {
-            require(
-                transaction.numConfirmations >= requiredSignatures,
-                "Not enough confirmations"
-            );
-        }
-
-        transaction.executed = true;
-
-        if (transaction.isDestroy) {
-            isLocked = true; // Блокируем контракт
-            (bool success, ) = payable(msg.sender).call{
-                value: address(this).balance
-            }("");
-            require(success, "Tx failed during destroy");
-        } else {
-            (bool success, ) = payable(transaction.to).call{
-                value: transaction.value
-            }(transaction.data);
-            require(success, "Tx failed");
-        }
-
-        emit ExecuteTransaction(msg.sender, _txIndex);
+        uint requiredConfirmations = transaction.isDestroy
+            ? owners.length
+            : requiredSignatures;
+        require(
+            transaction.numConfirmations >= requiredConfirmations,
+            "Insufficient confirmations"
+        );
+        _executeTransaction(_txIndex);
     }
 
     function getOwners() public view returns (address[] memory) {
@@ -186,8 +199,12 @@ contract MultiSigWallet {
         return transactions.length;
     }
 
-    function getBalance() public view returns (uint) {
-        return address(this).balance;
+    function getBalance() public view returns (uint256) {
+        uint256 callStatus;
+        assembly {
+            callStatus := balance(address())
+        }
+        return callStatus;
     }
 
     function getTransaction(

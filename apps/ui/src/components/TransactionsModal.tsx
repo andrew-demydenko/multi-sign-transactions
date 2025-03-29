@@ -1,7 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { getTransactions } from "@/services/provider-service";
-import { useAppStore } from "@/stores/app-store";
 import { clsx } from "clsx";
+import { useFetchTransactions } from "@/hooks/transaction-hooks";
 
 interface TransactionsModalProps {
   walletAddress: string | null;
@@ -12,14 +10,8 @@ const TransactionsModal = ({
   walletAddress,
   onClose,
 }: TransactionsModalProps) => {
-  const provider = useAppStore((state) => state.provider);
-  const { data: transactions, isLoading } = useQuery({
-    queryKey: ["transactions", walletAddress],
-    queryFn: () => {
-      if (!walletAddress || !provider) return Promise.resolve([]);
-      return getTransactions({ contractAddress: walletAddress, provider });
-    },
-    enabled: !!walletAddress && !!provider,
+  const { data: transactions, isLoading } = useFetchTransactions({
+    walletAddress,
   });
 
   return (

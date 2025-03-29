@@ -3,6 +3,7 @@ import { ClipboardDocumentIcon } from "@heroicons/react/24/outline";
 import { IWalletResponse } from "@/types";
 import { useToast } from "@/providers/toast-provider";
 import LockWalletButton from "./LockWalletButton";
+import BalanceButton from "./BalanceButton";
 
 interface WalletItemProps {
   wallet: IWalletResponse;
@@ -25,13 +26,16 @@ const WalletItem = memo(
             <h3 className="card-title truncate">
               {wallet.walletAddress.slice(0, 10)}
             </h3>
-            <button
-              onClick={() => copyToClipboard(wallet.walletAddress)}
-              className="btn btn-ghost btn-xs"
-              title="Copy address"
-            >
-              <ClipboardDocumentIcon className="h-4 w-4" />
-            </button>
+            <div className="flex items-center">
+              <BalanceButton walletAddress={wallet.walletAddress} />
+              <button
+                onClick={() => copyToClipboard(wallet.walletAddress)}
+                className="btn btn-ghost btn-xs"
+                title="Copy address"
+              >
+                <ClipboardDocumentIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="text-sm space-y-2 mt-2">

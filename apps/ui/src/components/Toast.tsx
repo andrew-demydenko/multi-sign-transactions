@@ -81,9 +81,9 @@ export const Toast = ({
   }, [duration, onClose]);
 
   const icon = {
-    success: <CheckCircleIcon className="h-5 w-5" />,
-    error: <ExclamationCircleIcon className="h-5 w-5" />,
-    warning: <ExclamationCircleIcon className="h-5 w-5" />,
+    success: <CheckCircleIcon className="size-5" />,
+    error: <ExclamationCircleIcon className="size-5" />,
+    warning: <ExclamationCircleIcon className="size-5" />,
     info: null,
   }[type || "info"];
 
@@ -102,7 +102,7 @@ export const Toast = ({
           setIsVisible(false);
           setTimeout(onClose, 300);
         }}
-        className="ml-auto btn btn-ghost size-5 p-0 hover:bg-white/20"
+        className="ml-auto btn btn-ghost size-5 p-0"
       >
         <XMarkIcon className="size-4" />
       </button>

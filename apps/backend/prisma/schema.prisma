@@ -14,19 +14,10 @@ model User {
 }
 
 model Wallet {
-  walletAddress      String        @id
+  walletAddress      String       @id
   requiredSignatures Int
-  transactions       Transaction[]
   owners             WalletUser[]
-}
-
-model Transaction {
-  id            String   @id @default(uuid())
-  amount        Float
-  recipient     String
-  walletAddress String
-  timestamp     DateTime
-  wallet        Wallet   @relation(fields: [walletAddress], references: [walletAddress])
+  isLocked           Boolean      @default(false)
 }
 
 model WalletUser {
