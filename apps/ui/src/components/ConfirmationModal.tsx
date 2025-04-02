@@ -1,5 +1,5 @@
 import { XMarkIcon } from "@heroicons/react/20/solid";
-import { type ReactNode } from "react";
+import { type ReactNode, memo } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 
@@ -28,60 +28,62 @@ interface ConfirmationModalProps extends VariantProps<typeof buttonVariants> {
   onCancel: () => void;
 }
 
-const ConfirmationModal = ({
-  isOpen,
-  title,
-  description,
-  confirmText,
-  cancelText = "Cancel",
-  icon,
-  isProcessing = false,
-  onConfirm,
-  onCancel,
-  variant = "default",
-}: ConfirmationModalProps) => {
-  if (!isOpen) return null;
+const ConfirmationModal = memo(
+  ({
+    isOpen,
+    title,
+    description,
+    confirmText,
+    cancelText = "Cancel",
+    icon,
+    isProcessing = false,
+    onConfirm,
+    onCancel,
+    variant = "default",
+  }: ConfirmationModalProps) => {
+    if (!isOpen) return null;
 
-  return (
-    <div className={clsx("modal", { "modal-open": isOpen })}>
-      <div className="modal-box max-w-md">
-        <button
-          onClick={onCancel}
-          className="btn btn-sm btn-circle absolute right-2 top-2"
-          disabled={isProcessing}
-        >
-          <XMarkIcon className="h-4 w-4" />
-        </button>
-
-        <h3 className="font-bold text-lg">{title}</h3>
-
-        <div className="alert alert-info bg-white border-0 mt-4">
-          {icon}
-          <span>{description}</span>
-        </div>
-
-        <div className="modal-action">
-          <button className="btn" onClick={onCancel} disabled={isProcessing}>
-            {cancelText}
-          </button>
+    return (
+      <div className={clsx("modal", { "modal-open": isOpen })}>
+        <div className="modal-box max-w-md">
           <button
-            className={clsx(buttonVariants({ variant }))}
-            onClick={onConfirm}
+            onClick={onCancel}
+            className="btn btn-sm btn-circle absolute right-2 top-2"
             disabled={isProcessing}
           >
-            {isProcessing ? (
-              <>
-                <span className="loading loading-spinner"></span>
-                Processing...
-              </>
-            ) : (
-              confirmText
-            )}
+            <XMarkIcon className="h-4 w-4" />
           </button>
+
+          <h3 className="font-bold text-lg">{title}</h3>
+
+          <div className="alert alert-info bg-white border-0 mt-4">
+            {icon}
+            <span>{description}</span>
+          </div>
+
+          <div className="modal-action">
+            <button className="btn" onClick={onCancel} disabled={isProcessing}>
+              {cancelText}
+            </button>
+            <button
+              className={clsx(buttonVariants({ variant }))}
+              onClick={onConfirm}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <span className="loading loading-spinner"></span>
+                  Processing...
+                </>
+              ) : (
+                confirmText
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
 
 export default ConfirmationModal;

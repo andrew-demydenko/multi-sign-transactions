@@ -1,11 +1,13 @@
 import "./App.css";
 
-import MetamaskControls from "@/components/MetamaskControls";
+import MetamaskProfile from "@/components/MetamaskProfile";
 import WalletsList from "@/components/WalletsList";
 import { useAppStore } from "@/stores/app-store";
 
 const Home = () => {
   const userAddress = useAppStore((state) => state.userAddress);
+  const network = useAppStore((state) => state.network);
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-900">
       <div className="navbar bg-base-100 shadow-lg">
@@ -13,12 +15,12 @@ const Home = () => {
           <a className="btn btn-ghost normal-case text-xl mr-3">
             Multi Sign Wallet
           </a>
-          <span>{import.meta.env.VITE_NETWORK?.toUpperCase()}</span>
+          <span>{network?.toUpperCase()}</span>
         </div>
 
         <div className="flex-none gap-4">
           {window.ethereum ? (
-            <MetamaskControls />
+            <MetamaskProfile />
           ) : (
             <div className="mr-4">
               <h1 className="text-3xl font-bold">MetaMask not found</h1>

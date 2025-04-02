@@ -11,6 +11,7 @@ export interface IWallet {
   owners: string[];
   requiredSignatures: number;
   walletAddress: string;
+  network: string;
 }
 
 export interface IWalletResponse extends Omit<IWallet, "owners"> {

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { ClipboardDocumentIcon } from "@heroicons/react/24/outline";
 import { IWalletResponse } from "@/types";
-import { useToast } from "@/providers/toast-provider";
+import { useCopyToClipboard } from "@/hooks/common-hooks";
 import LockWalletButton from "./LockWalletButton";
 import BalanceButton from "./BalanceButton";
 
@@ -13,11 +13,7 @@ interface WalletItemProps {
 
 const WalletItem = memo(
   ({ wallet, showTransactions, showTransactionCreation }: WalletItemProps) => {
-    const { showToast } = useToast();
-    const copyToClipboard = (text: string) => {
-      navigator.clipboard.writeText(text);
-      showToast({ message: "Address copied to clipboard", type: "success" });
-    };
+    const copyToClipboard = useCopyToClipboard();
 
     return (
       <div className="card bg-base-100 shadow-md">
@@ -29,7 +25,12 @@ const WalletItem = memo(
             <div className="flex items-center">
               <BalanceButton walletAddress={wallet.walletAddress} />
               <button
-                onClick={() => copyToClipboard(wallet.walletAddress)}
+                onClick={() =>
+                  copyToClipboard({
+                    text: wallet.walletAddress,
+                    toastMessage: "Address copied to clipboard",
+                  })
+                }
                 className="btn btn-ghost btn-xs"
                 title="Copy address"
               >

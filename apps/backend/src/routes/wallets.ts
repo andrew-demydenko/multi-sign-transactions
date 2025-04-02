@@ -5,9 +5,13 @@ const prisma = new PrismaClient();
 const router = Router();
 
 router.get(
-  "/user/:userAddress",
-  async (req: Request<{ userAddress: string }>, res: Response) => {
+  "/user/:userAddress/network/:network",
+  async (
+    req: Request<{ userAddress: string; network: string }>,
+    res: Response
+  ) => {
     const { userAddress } = req.params;
+    const { network } = req.params;
 
     if (!userAddress) {
       return res.status(400).json({ error: "User address is required" });
@@ -16,6 +20,7 @@ router.get(
     try {
       const wallets = await prisma.wallet.findMany({
         where: {
+          network,
           owners: {
             some: {
               userAddress,
@@ -59,7 +64,6 @@ router.get(
         where: { walletAddress },
         include: {
           owners: true,
-          transactions: true,
         },
       });
 

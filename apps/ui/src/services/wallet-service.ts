@@ -4,6 +4,7 @@ export const createWallet = async ({
   walletAddress,
   owners,
   requiredSignatures,
+  network,
 }: IWallet): Promise<IWallet> => {
   try {
     const response = await fetch(
@@ -13,7 +14,12 @@ export const createWallet = async ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ walletAddress, owners, requiredSignatures }),
+        body: JSON.stringify({
+          walletAddress,
+          owners,
+          requiredSignatures,
+          network,
+        }),
       }
     );
     if (!response.ok) throw new Error("Failed to create wallet");
@@ -23,12 +29,16 @@ export const createWallet = async ({
   }
 };
 
-export const fetchUserWallets = async (
-  userAddress: string
-): Promise<IWalletResponse[]> => {
+export const fetchUserWallets = async ({
+  userAddress,
+  network,
+}: {
+  userAddress: string;
+  network: string;
+}): Promise<IWalletResponse[]> => {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/wallets/user/${userAddress}`
+      `${import.meta.env.VITE_SERVER_URL}/api/wallets/user/${userAddress}/network/${network}`
     );
     if (!response.ok) throw new Error("Failed to fetch user");
     return response.json();

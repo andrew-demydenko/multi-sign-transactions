@@ -17,6 +17,7 @@ model Wallet {
   walletAddress      String       @id
   requiredSignatures Int
   owners             WalletUser[]
+  network            String       @default("sepolia")
   isLocked           Boolean      @default(false)
 }
 

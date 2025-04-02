@@ -15,13 +15,15 @@ const WalletsList = () => {
     setWalletForTransactionCreationModal,
   ] = useState<string | null>(null);
   const userAddress = useAppStore((state) => state.userAddress);
+  const network = useAppStore((state) => state.network);
+
   const { data: wallets, isLoading } = useQuery({
     queryKey: ["wallets", userAddress],
     retry: 0,
     staleTime: 10000,
     queryFn: () => {
       if (!userAddress) return Promise.resolve([]);
-      return fetchUserWallets(userAddress);
+      return fetchUserWallets({ userAddress, network });
     },
     enabled: !!userAddress,
   });

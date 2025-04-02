@@ -231,4 +231,11 @@ contract MultiSigWallet {
             transaction.isDestroy
         );
     }
+
+    function hasConfirmed(
+        uint _txIndex,
+        address _owner
+    ) public view txExists(_txIndex) returns (bool) {
+        return confirmations[_txIndex][_owner];
+    }
 }

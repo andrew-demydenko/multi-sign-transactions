@@ -16,6 +16,7 @@ const getContract = (
 };
 
 interface ITransaction {
+  txIndex: number;
   to: string;
   value: string;
   data: string;
@@ -58,11 +59,12 @@ export const processPendingTxs = async () => {
             const contractAddress = receipt.contractAddress;
             const owners = tx.data?.owners;
             const requiredSignatures = tx.data.requiredSignatures || 1;
-            if (contractAddress && owners?.length) {
+            if (contractAddress && owners?.length && tx.data.network) {
               await createWallet({
                 requiredSignatures,
                 owners,
                 walletAddress: contractAddress,
+                network: tx.data.network,
               });
               showGlobalToast({
                 type: "success",
@@ -116,12 +118,6 @@ export const deployMultiSignWallet = async ({
       throw new Error("Signer is not available");
     }
     const network = await provider.getNetwork();
-    const requiredNetwork = import.meta.env.VITE_NETWORK;
-
-    if (network.name !== requiredNetwork) {
-      throw new Error(`Change network on (${requiredNetwork})`);
-    }
-
     const factory = new ethers.ContractFactory(
       MultiSigWalletArtifact.abi,
       MultiSigWalletArtifact.bytecode,
@@ -137,22 +133,32 @@ export const deployMultiSignWallet = async ({
       savePendingTx({
         hash: deploymentTransaction.hash,
         type: "deploy",
-        data: { owners, requiredSignatures },
+        data: { owners, requiredSignatures, network: network.name },
       });
     }
 
     const receipt = (await deploymentTransaction?.wait()) || null;
     const contractAddress = await contract.getAddress();
 
-    await createWallet({
-      walletAddress: contractAddress,
-      owners,
-      requiredSignatures,
-    });
-    showGlobalToast({
-      type: "success",
-      message: "Wallet is created successfully",
-    });
+    if (receipt?.status === 1) {
+      await createWallet({
+        walletAddress: contractAddress,
+        owners,
+        requiredSignatures,
+        network: network.name,
+      });
+      showGlobalToast({
+        type: "success",
+        message: "Wallet is created successfully",
+      });
+    } else {
+      showGlobalToast({
+        type: "error",
+        message: "Wallet creation failed",
+      });
+    }
+
+    removePendingTx(deploymentTransaction?.hash || "");
 
     return { contractAddress, receipt, balance: 0 };
   } catch (error) {
@@ -198,7 +204,10 @@ export const submitTransaction = async ({
       data || "0x"
     );
   } catch (error) {
-    showGlobalToast({ type: "error", message: "Could not create transaction" });
+    showGlobalToast({
+      type: "error",
+      message: "Creating failed or Insufficient contract balance",
+    });
     throw new Error(`Could not create transaction. ${error}`);
   }
 };
@@ -232,10 +241,35 @@ export const confirmTransaction = async ({
   signer: TSigner;
 }): Promise<ethers.ContractTransaction> => {
   try {
+    if (!signer) {
+      throw new Error("Signer is not available");
+    }
+
     const contract = getContract(contractAddress, signer);
+    const userAddress = await signer.getAddress();
+    const confirmed = await contract.hasConfirmed(txIndex, userAddress);
+
+    if (confirmed) {
+      showGlobalToast({
+        type: "error",
+        message: "Transaction is already confirmed",
+      });
+      return Promise.reject({ confirmed: true });
+    }
+
     const result = await contract.confirmTransaction(txIndex);
-    showGlobalToast({ type: "success", message: "Transaction is confirmed" });
-    return result;
+    const receipt = await result.wait();
+
+    if (receipt?.status === 0) {
+      showGlobalToast({
+        type: "error",
+        message: "Transaction is failed",
+      });
+      throw new Error(`Could not confirm transaction.`);
+    } else {
+      showGlobalToast({ type: "success", message: "Transaction is confirmed" });
+      return result;
+    }
   } catch (error) {
     showGlobalToast({
       type: "error",
@@ -259,6 +293,7 @@ export const getTransactions = async ({
       for (let i = 0; i < count; i++) {
         const tx = await contract.getTransaction(i);
         transactions.push({
+          txIndex: i,
           to: tx[0],
           value: ethers.formatEther(tx[1]),
           data: tx[2],
@@ -288,6 +323,7 @@ export const getTransaction = async ({
     const contract = getContract(contractAddress, provider);
     const tx = await contract.getTransaction(txIndex);
     return {
+      txIndex,
       to: tx[0],
       value: ethers.formatEther(tx[1]),
       data: tx[2],

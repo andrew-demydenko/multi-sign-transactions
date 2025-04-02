@@ -1,8 +1,10 @@
 import { clsx } from "clsx";
 import { useFetchTransactions } from "@/hooks/transaction-hooks";
+import { Nullable } from "@/types";
+import SignButton from "./SignButton";
 
 interface TransactionsModalProps {
-  walletAddress: string | null;
+  walletAddress: Nullable<string>;
   onClose: () => void;
 }
 
@@ -35,6 +37,7 @@ const TransactionsModal = ({
                   <th>Value (ETH)</th>
                   <th>Confirmations</th>
                   <th>Status</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -48,6 +51,14 @@ const TransactionsModal = ({
                         <span className="badge badge-success">Executed</span>
                       ) : (
                         <span className="badge badge-warning">Pending</span>
+                      )}
+                    </td>
+                    <td>
+                      {!tx.executed && (
+                        <SignButton
+                          walletAddress={walletAddress || ""}
+                          txIndex={index}
+                        />
                       )}
                     </td>
                   </tr>

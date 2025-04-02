@@ -3,10 +3,12 @@ import WalletCreation from "./WalletCreation";
 import { disconnectMetaMask } from "@/services/metamask-service";
 import { useConnectWallet, useUserInitiazation } from "@/hooks/user-hooks";
 import { useAppStore } from "@/stores/app-store";
+import { useCopyToClipboard } from "@/hooks/common-hooks";
 
 const MetamaskControls = () => {
   const { isLoading } = useUserInitiazation();
   const { userAddress, balance } = useAppStore();
+  const copyToClipboard = useCopyToClipboard();
   const { mutate: connectWallet, isPending: isConnecting } = useConnectWallet();
 
   if (isLoading)
@@ -26,7 +28,17 @@ const MetamaskControls = () => {
           <li>
             <div className="flex flex-row items-center justify-between">
               <span className="text-xs opacity-50">Connected Wallet</span>
-              <span className="font-mono text-sm truncate">{userAddress}</span>
+              <span
+                onClick={() =>
+                  copyToClipboard({
+                    text: userAddress,
+                    toastMessage: "User's wallet address is copied.",
+                  })
+                }
+                className="font-mono text-sm truncate"
+              >
+                {userAddress}
+              </span>
             </div>
           </li>
           <li>

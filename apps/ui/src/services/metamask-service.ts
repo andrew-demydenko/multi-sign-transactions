@@ -68,8 +68,7 @@ export const connectMetaMask = async (): Promise<IMetaMaskSession> => {
 };
 
 export const createInfuraProvider = (): ethers.InfuraProvider => {
-  const savedNetwork =
-    localStorage.getItem("network") || import.meta.env.VITE_NETWORK;
+  const savedNetwork = localStorage.getItem("network") || "sepolia";
   return new ethers.InfuraProvider(
     savedNetwork,
     import.meta.env.VITE_INFURA_API_KEY

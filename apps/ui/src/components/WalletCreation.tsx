@@ -169,16 +169,18 @@ const WalletCreation = () => {
                 key={owner}
                 className="flex justify-between items-center py-2 px-4"
               >
-                <div className="flex items-center">
+                <div className="flex items-center mr-2 overflow-hidden">
                   <span className="mr-2">{index + 1}.</span>
-                  <span className="font-mono">{owner}</span>
+                  <span className="font-mono truncate" title={owner}>
+                    {owner}
+                  </span>
                 </div>
                 <button
-                  className="btn btn-error btn-xs p-0 size-6"
+                  className="btn btn-error btn-xs p-2 text-white "
                   onClick={() => removeOwner(owner)}
                   aria-label="Remove owner"
                 >
-                  <TrashIcon className="size-3" />
+                  <TrashIcon className="size-4" />
                 </button>
               </li>
             ))}
