@@ -18,6 +18,7 @@ const LockWalletButton = memo(
     const signer = useAppStore((state) => state.signer);
     const userAddress = useAppStore((state) => state.userAddress);
 
+    console.log(1);
     const { mutate: lockWallet, isPending } = useMutation({
       mutationFn: async () => {
         if (!signer) throw new Error("Signer not connected");
