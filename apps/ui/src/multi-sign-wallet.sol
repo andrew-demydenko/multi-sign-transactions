@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.29;
 
 contract MultiSigWallet {
+    uint256 private constant _MAX_OWNERS = 10;
+    uint256 private constant _MAX_PENDING_TX = 50;
     address[] public owners;
     mapping(address => bool) public isOwner;
     uint public requiredSignatures;
-    bool public isLocked = false;
+    bool public isLocked;
 
     struct Transaction {
         address to;
@@ -20,15 +22,11 @@ contract MultiSigWallet {
     mapping(uint => mapping(address => bool)) public confirmations;
 
     event Deposit(address indexed sender, uint amount);
+    event ContractLocked(address indexed initiator);
     event SubmitTransaction(
         address indexed owner,
         uint indexed txIndex,
         address indexed to,
-        uint value
-    );
-    event SubmitLockTrasaction(
-        address indexed owner,
-        uint indexed txIndex,
         uint value
     );
     event ConfirmTransaction(address indexed owner, uint indexed txIndex);
@@ -60,19 +58,24 @@ contract MultiSigWallet {
     }
 
     constructor(address[] memory _owners, uint _requiredSignatures) payable {
-        require(_owners.length > 0, "Owners required");
+        uint _ownersCount = _owners.length;
+        require(_ownersCount > 0, "Owners required");
+        require(_ownersCount < _MAX_OWNERS, "Too many owners");
+        require(_requiredSignatures > 0, "Invalid required signatures");
         require(
-            _requiredSignatures > 0 && _requiredSignatures <= _owners.length,
+            _requiredSignatures <= _ownersCount,
             "Invalid required signatures"
         );
 
-        for (uint i = 0; i < _owners.length; i++) {
-            address owner = _owners[i];
-            require(owner != address(0), "Invalid owner");
-            require(!isOwner[owner], "Owner not unique");
+        unchecked {
+            for (uint256 i = 0; i < _ownersCount; ++i) {
+                address owner = _owners[i];
+                require(owner != address(0), "Zero address");
+                require(!isOwner[owner], "Duplicate owner");
 
-            isOwner[owner] = true;
-            owners.push(owner);
+                isOwner[owner] = true;
+                owners.push(owner);
+            }
         }
 
         requiredSignatures = _requiredSignatures;
@@ -82,30 +85,16 @@ contract MultiSigWallet {
         emit Deposit(msg.sender, msg.value);
     }
 
-    function submitLockTrasaction() public onlyOwner notLocked {
-        uint txIndex = transactions.length;
-
-        transactions.push(
-            Transaction({
-                to: address(0),
-                value: 0,
-                data: "",
-                executed: false,
-                numConfirmations: 0,
-                isDestroy: true
-            })
-        );
-
-        emit SubmitLockTrasaction(msg.sender, txIndex, getBalance());
-    }
     function submitTransaction(
         address _to,
         uint _value,
-        bytes memory _data
+        bytes memory _data,
+        bool isDestroy
     ) public onlyOwner notLocked {
-        require(getBalance() >= _value, "Insufficient contract balance");
+        uint _txIndex = transactions.length;
+        require(_txIndex < _MAX_PENDING_TX, "Too many pending tx");
+        require(getBalance() > _value, "Insufficient contract balance");
 
-        uint txIndex = transactions.length;
         transactions.push(
             Transaction({
                 to: _to,
@@ -113,44 +102,37 @@ contract MultiSigWallet {
                 data: _data,
                 executed: false,
                 numConfirmations: 0,
-                isDestroy: false
+                isDestroy: isDestroy
             })
         );
 
-        emit SubmitTransaction(msg.sender, txIndex, _to, _value);
+        emit SubmitTransaction(msg.sender, _txIndex, _to, _value);
     }
 
     function _executeTransaction(uint _txIndex) private {
         Transaction storage transaction = transactions[_txIndex];
-
-        if (transaction.isDestroy) {
-            require(
-                transaction.numConfirmations == owners.length,
-                "Not all owners confirmed"
-            );
-        } else {
-            require(
-                transaction.numConfirmations >= requiredSignatures,
-                "Not enough confirmations"
-            );
-        }
+        require(
+            transaction.numConfirmations ==
+                (transaction.isDestroy ? owners.length : requiredSignatures),
+            "Insufficient confirmations"
+        );
 
         transaction.executed = true;
 
         if (transaction.isDestroy) {
+            (bool success, ) = payable(transaction.to).call{
+                value: getBalance()
+            }(transaction.data);
+            emit ContractLocked(msg.sender);
             isLocked = true;
-            (bool success, ) = payable(msg.sender).call{value: getBalance()}(
-                ""
-            );
-            require(success, "Destroy failed");
+            require(success, "Lock Tx failed");
         } else {
             (bool success, ) = payable(transaction.to).call{
                 value: transaction.value
             }(transaction.data);
             require(success, "Tx failed");
+            emit ExecuteTransaction(msg.sender, _txIndex);
         }
-
-        emit ExecuteTransaction(msg.sender, _txIndex);
     }
 
     function confirmTransaction(
@@ -169,26 +151,12 @@ contract MultiSigWallet {
         emit ConfirmTransaction(msg.sender, _txIndex);
 
         Transaction storage transaction = transactions[_txIndex];
-        uint requiredConfirmations = transaction.isDestroy
+        uint _requiredConfirmations = transaction.isDestroy
             ? owners.length
             : requiredSignatures;
-        if (transaction.numConfirmations >= requiredConfirmations) {
+        if (transaction.numConfirmations == _requiredConfirmations) {
             _executeTransaction(_txIndex);
         }
-    }
-
-    function executeTransaction(
-        uint _txIndex
-    ) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) notLocked {
-        Transaction storage transaction = transactions[_txIndex];
-        uint requiredConfirmations = transaction.isDestroy
-            ? owners.length
-            : requiredSignatures;
-        require(
-            transaction.numConfirmations >= requiredConfirmations,
-            "Insufficient confirmations"
-        );
-        _executeTransaction(_txIndex);
     }
 
     function getOwners() public view returns (address[] memory) {
@@ -200,11 +168,7 @@ contract MultiSigWallet {
     }
 
     function getBalance() public view returns (uint256) {
-        uint256 callStatus;
-        assembly {
-            callStatus := balance(address())
-        }
-        return callStatus;
+        return address(this).balance;
     }
 
     function getTransaction(
@@ -221,21 +185,12 @@ contract MultiSigWallet {
             bool isDestroy
         )
     {
-        Transaction storage transaction = transactions[_txIndex];
-        return (
-            transaction.to,
-            transaction.value,
-            transaction.data,
-            transaction.executed,
-            transaction.numConfirmations,
-            transaction.isDestroy
-        );
-    }
-
-    function hasConfirmed(
-        uint _txIndex,
-        address _owner
-    ) public view txExists(_txIndex) returns (bool) {
-        return confirmations[_txIndex][_owner];
+        Transaction storage t = transactions[_txIndex];
+        to = t.to;
+        value = t.value;
+        data = t.data;
+        executed = t.executed;
+        numConfirmations = t.numConfirmations;
+        isDestroy = t.isDestroy;
     }
 }

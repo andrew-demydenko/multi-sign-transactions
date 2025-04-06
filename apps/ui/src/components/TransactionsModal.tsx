@@ -2,6 +2,7 @@ import { clsx } from "clsx";
 import { useFetchTransactions } from "@/hooks/transaction-hooks";
 import { Nullable } from "@/types";
 import SignButton from "./SignButton";
+import { LockClosedIcon } from "@heroicons/react/24/solid";
 
 interface TransactionsModalProps {
   walletAddress: Nullable<string>;
@@ -37,13 +38,14 @@ const TransactionsModal = ({
                   <th>Value (ETH)</th>
                   <th>Confirmations</th>
                   <th>Status</th>
+                  <th>Lock</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions?.map((tx, index) => (
                   <tr key={index}>
-                    <td className="truncate max-w-xs">{tx.to}</td>
+                    <td className="truncate max-w-40">{tx.to}</td>
                     <td>{tx.value}</td>
                     <td>{tx.numConfirmations}</td>
                     <td>
@@ -52,6 +54,14 @@ const TransactionsModal = ({
                       ) : (
                         <span className="badge badge-warning">Pending</span>
                       )}
+                    </td>
+                    <td>
+                      {tx.isDestroy ? (
+                        <LockClosedIcon
+                          className="h-6 w-6 text-error"
+                          title="Lock transaction"
+                        />
+                      ) : null}
                     </td>
                     <td>
                       {!tx.executed && (

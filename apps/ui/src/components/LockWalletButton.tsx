@@ -54,7 +54,7 @@ const LockWalletButton = memo(
         <ConfirmationModal
           isOpen={showConfirmation}
           title="Wallet Lock Confirmation"
-          description={`This will create lock transaction. Requires ${requiredSignatures} owner signatures to lock the wallet.`}
+          description={`This will create lock transaction. Requires ${requiredSignatures} owner(s) signatures to lock the wallet.`}
           confirmText="Confirm Lock"
           cancelText="Cancel"
           icon={<LockClosedIcon className="h-6 w-6" />}

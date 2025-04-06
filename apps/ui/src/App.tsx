@@ -12,9 +12,14 @@ const Home = () => {
     <div className="flex flex-col min-h-screen bg-gray-900">
       <div className="navbar bg-base-100 shadow-lg">
         <div className="flex flex-1 items-center">
-          <a className="btn btn-ghost normal-case text-xl mr-3">
-            Multi Sign Wallet
-          </a>
+          <h1 className="normal-case text-xl mx-3 flex items-center">
+            <img
+              src="/logo.svg"
+              alt="Logo"
+              className="h-14 w-14 mr-2 rounded-md"
+            />
+            Multi Sign Wallets
+          </h1>
           <span>{network?.toUpperCase()}</span>
         </div>
 

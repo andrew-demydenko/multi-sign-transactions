@@ -201,7 +201,8 @@ export const submitTransaction = async ({
     return await contract.submitTransaction(
       to,
       ethers.parseEther(value),
-      data || "0x"
+      data || "0x",
+      false
     );
   } catch (error) {
     showGlobalToast({
@@ -221,7 +222,9 @@ export const submitLockTransaction = async ({
 }): Promise<ethers.ContractTransaction> => {
   try {
     const contract = getContract(contractAddress, signer);
-    return await contract.submitLockTrasaction();
+    const balance = await contract.getBalance();
+    const userAddress = await signer?.getAddress();
+    return await contract.submitTransaction(userAddress, balance, "0x", true);
   } catch (error) {
     showGlobalToast({
       type: "error",

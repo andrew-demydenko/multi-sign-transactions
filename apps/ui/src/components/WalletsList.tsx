@@ -18,7 +18,7 @@ const WalletsList = () => {
   const network = useAppStore((state) => state.network);
 
   const { data: wallets, isLoading } = useQuery({
-    queryKey: ["wallets", userAddress],
+    queryKey: ["wallets", userAddress, network],
     retry: 0,
     staleTime: 10000,
     queryFn: () => {
@@ -33,7 +33,6 @@ const WalletsList = () => {
   }, []);
 
   const showTransactionCreation = useCallback((walletAddress: string) => {
-    console.log(walletAddress);
     setWalletForTransactionCreationModal(walletAddress);
   }, []);
 
@@ -45,26 +44,28 @@ const WalletsList = () => {
     setWalletForTransactionCreationModal(null);
   }, []);
 
-  if (isLoading) {
-    return <span className="loading loading-lg"></span>;
-  }
-
   return (
-    <div>
-      <h2 className="text-xl font-semibold">Multi Sign Wallets</h2>
-
-      {wallets?.length === 0 ? (
+    <div className="pt-1">
+      {wallets?.length === 0 && !isLoading ? (
         <p className="text-gray-500">No wallets found</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {wallets?.map((wallet, index) => (
-            <WalletItem
-              key={wallet.walletAddress || index}
-              wallet={wallet}
-              showTransactions={showTransactions}
-              showTransactionCreation={showTransactionCreation}
-            />
-          ))}
+          {isLoading ? (
+            <>
+              <div className="skeleton h-70" />
+              <div className="skeleton h-70" />
+              <div className="skeleton h-70" />
+            </>
+          ) : (
+            wallets?.map((wallet, index) => (
+              <WalletItem
+                key={wallet.walletAddress || index}
+                wallet={wallet}
+                showTransactions={showTransactions}
+                showTransactionCreation={showTransactionCreation}
+              />
+            ))
+          )}
         </div>
       )}
 
