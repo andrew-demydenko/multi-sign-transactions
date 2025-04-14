@@ -33,19 +33,44 @@ router.get(
 );
 
 router.post("/", async (req: Request<User>, res: Response) => {
+  const { userAddress } = req.body;
+
+  if (!userAddress) {
+    return res.status(400).json({ error: "userAddress is required" });
+  }
+
+  try {
+    const currentUser = await prisma.user.findUnique({
+      where: { userAddress },
+    });
+
+    if (currentUser) {
+      res.status(201).json(currentUser);
+    } else {
+      const user = await prisma.user.create({
+        data: { userAddress },
+      });
+
+      res.status(201).json(user);
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Error creating user", reason: error });
+  }
+});
+
+router.put("/", async (req: Request<User>, res: Response) => {
   const { userAddress, name } = req.body;
 
   if (!userAddress) {
     return res.status(400).json({ error: "userAddress is required" });
   }
-  const userName = name || "";
 
   try {
-    const user = await prisma.user.upsert({
+    const user = await prisma.user.update({
       where: { userAddress },
-      update: { name: userName },
-      create: { userAddress, name: userName },
+      data: { userAddress, name },
     });
+
     res.status(201).json(user);
   } catch (error) {
     res.status(500).json({ error: "Error creating user", reason: error });

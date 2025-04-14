@@ -12,9 +12,8 @@ export const fetchUser = async (userAddress: string): Promise<IUser> => {
   }
 };
 
-export const createOrModifyUser = async ({
+export const getOrCreateUser = async ({
   userAddress,
-  name,
 }: IUser): Promise<IUser> => {
   try {
     const response = await fetch(
@@ -24,10 +23,32 @@ export const createOrModifyUser = async ({
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ userAddress }),
+      }
+    );
+    if (!response.ok) throw new Error("Failed to getOrCreateUser user");
+    return response.json();
+  } catch (error) {
+    throw new Error(`Could not create or modify user. ${error}`);
+  }
+};
+
+export const modifyUser = async ({
+  userAddress,
+  name,
+}: IUser): Promise<IUser> => {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_SERVER_URL}/api/users`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ userAddress, name }),
       }
     );
-    if (!response.ok) throw new Error("Failed to create user");
+    if (!response.ok) throw new Error("Failed to modifyUser user");
     return response.json();
   } catch (error) {
     throw new Error(`Could not create or modify user. ${error}`);

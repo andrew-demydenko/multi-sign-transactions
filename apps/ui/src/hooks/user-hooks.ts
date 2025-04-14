@@ -9,7 +9,7 @@ import { processPendingTxs } from "@/services/provider-service";
 import { useEffect } from "react";
 import { ethers } from "ethers";
 import { useAppStore } from "@/stores/app-store";
-import { createOrModifyUser } from "@/services/user-service";
+import { getOrCreateUser } from "@/services/user-service";
 
 export const useFetchBalance = () => {
   const setBalance = useAppStore((state) => state.setBalance);
@@ -48,7 +48,7 @@ export const useUserInitiazation = () => {
 
   const fetchUserQuery = useQuery({
     queryKey: ["user", userAddress],
-    queryFn: () => createOrModifyUser({ userAddress }),
+    queryFn: () => getOrCreateUser({ userAddress }),
     enabled: !!userAddress,
     staleTime: 10000,
     retry: 1,

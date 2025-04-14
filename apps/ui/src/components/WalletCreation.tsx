@@ -66,7 +66,7 @@ const validateForm = ({
 const WalletCreation = () => {
   const [state, dispatch] = useReducer(formReducer, initialState);
   const { newOwner, submitted } = state;
-  const { signer, provider, userAddress } = useAppStore();
+  const { signer, provider, userAddress, network } = useAppStore();
   const {
     owners,
     addOwner,
@@ -84,7 +84,7 @@ const WalletCreation = () => {
         if (params.signer && params.provider) {
           const { contractAddress } = await deployMultiSignWallet(params);
           queryClient.invalidateQueries({
-            queryKey: ["wallets", params.userAddress],
+            queryKey: ["wallets", params.userAddress, network],
             exact: true,
           });
           return contractAddress;

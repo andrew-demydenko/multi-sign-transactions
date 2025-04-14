@@ -1,13 +1,17 @@
+import { useState } from "react";
 import { UserIcon } from "@heroicons/react/24/solid";
 import WalletCreation from "./WalletCreation";
 import { disconnectMetaMask } from "@/services/metamask-service";
 import { useConnectWallet, useUserInitiazation } from "@/hooks/user-hooks";
 import { useAppStore } from "@/stores/app-store";
 import { useCopyToClipboard } from "@/hooks/common-hooks";
+import ProfileEditorModal from "./ProfileEditorModal";
 
 const MetamaskControls = () => {
   const { isLoading } = useUserInitiazation();
-  const { userAddress, balance } = useAppStore();
+  const { userAddress, balance, userName } = useAppStore();
+  const [isProfileEditorModalOpen, setIsProfileEditorModalOpen] =
+    useState(false);
   const copyToClipboard = useCopyToClipboard();
   const { mutate: connectWallet, isPending: isConnecting } = useConnectWallet();
 
@@ -25,6 +29,14 @@ const MetamaskControls = () => {
           tabIndex={0}
           className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-128"
         >
+          {userName ? (
+            <li>
+              <div className="flex justify-between">
+                <span>Name:</span>
+                <span>{userName || "Not set"}</span>
+              </div>
+            </li>
+          ) : null}
           <li>
             <div className="flex flex-row items-center justify-between">
               <span className="text-xs opacity-50">Connected Wallet</span>
@@ -47,6 +59,11 @@ const MetamaskControls = () => {
               <span>{parseFloat(balance).toFixed(4)} ETH</span>
             </div>
           </li>
+          <li>
+            <button onClick={() => setIsProfileEditorModalOpen(true)}>
+              Edit Profile
+            </button>
+          </li>
           <li className="border-t mt-2 pt-2">
             <button onClick={() => disconnectMetaMask()} className="text-error">
               Disconnect
@@ -54,6 +71,10 @@ const MetamaskControls = () => {
           </li>
         </ul>
       </div>
+      <ProfileEditorModal
+        isOpen={isProfileEditorModalOpen}
+        onClose={() => setIsProfileEditorModalOpen(false)}
+      />
     </div>
   ) : (
     <button

@@ -16,6 +16,7 @@ const LockWalletButton = memo(
     const [showConfirmation, setShowConfirmation] = useState(false);
     const queryClient = useQueryClient();
     const signer = useAppStore((state) => state.signer);
+    const network = useAppStore((state) => state.network);
     const userAddress = useAppStore((state) => state.userAddress);
 
     const { mutate: lockWallet, isPending } = useMutation({
@@ -28,7 +29,7 @@ const LockWalletButton = memo(
       },
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: ["wallets", userAddress],
+          queryKey: ["wallets", userAddress, network],
           exact: true,
         });
         setShowConfirmation(false);
