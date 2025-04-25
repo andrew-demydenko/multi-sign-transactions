@@ -1,31 +1,68 @@
+import { useState, useCallback, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  restoreMetamaskSession,
-  connectMetaMask,
-  disconnectMetaMask,
+  restoreConnection,
+  connectAccount,
+  disconnectAccount,
   createInfuraProvider,
-} from "@/services/metamask-service";
+} from "@/services/account-service";
 import { processPendingTxs } from "@/services/provider-service";
-import { useEffect } from "react";
 import { ethers } from "ethers";
 import { useAppStore } from "@/stores/app-store";
 import { getOrCreateUser } from "@/services/user-service";
 
+export const useCheckAccountUnlock = () => {
+  const [isUnlocked, setIsUnlocked] = useState(true);
+
+  const handleUnlock = useCallback(async () => {
+    try {
+      const value = await window.ethereum?.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }],
+      });
+      if (value) {
+        setIsUnlocked(true);
+      }
+    } catch (error) {
+      console.error("Error requesting unlock:", error);
+    }
+  }, []);
+
+  const checkUnlock = useCallback(async () => {
+    try {
+      const value = await window.ethereum?.isUnlock();
+      if (!value) {
+        handleUnlock();
+      }
+      setIsUnlocked(value);
+    } catch (error) {
+      console.error("Error checking unlock status:", error);
+    }
+  }, [handleUnlock]);
+
+  return { isUnlockedAccount: isUnlocked, checkIsUnlockedAccount: checkUnlock };
+};
+
 export const useFetchBalance = () => {
   const setBalance = useAppStore((state) => state.setBalance);
   const userAddress = useAppStore((state) => state.userAddress);
-  const provider = useAppStore((state) => state.provider);
+  const infuraProvider = useAppStore((state) => state.infuraProvider);
   const network = useAppStore((state) => state.network);
 
   const fetchBalanceQuery = useQuery({
     queryKey: ["user-balance", userAddress, network],
     queryFn: async () => {
-      const balance = (await provider?.getBalance(userAddress)) || "0";
+      try {
+        const balance = (await infuraProvider?.getBalance(userAddress)) || "0";
+        return { balance: ethers.formatEther(balance) };
+      } catch (e) {
+        console.error(e);
+      }
 
-      return { balance: ethers.formatEther(balance) };
+      return { balance: "0" };
     },
     staleTime: 10000,
-    enabled: !!provider && !!userAddress,
+    enabled: !!infuraProvider && !!userAddress,
     retry: 1,
   });
 
@@ -38,7 +75,7 @@ export const useFetchBalance = () => {
   return fetchBalanceQuery;
 };
 
-export const useUserInitiazation = () => {
+export const useAccountInitiazation = () => {
   const setUserData = useAppStore((state) => state.setUserData);
   const setData = useAppStore((state) => state.setData);
   const setNetwork = useAppStore((state) => state.setNetwork);
@@ -55,8 +92,8 @@ export const useUserInitiazation = () => {
   });
 
   const restoreSessionQuery = useQuery({
-    queryKey: ["restoreMetamaskSession"],
-    queryFn: restoreMetamaskSession,
+    queryKey: ["restoreConnectionSession"],
+    queryFn: restoreConnection,
     staleTime: 10000,
   });
 
@@ -64,16 +101,17 @@ export const useUserInitiazation = () => {
     if (!window.ethereum) return;
 
     const handleAccountsChanged = async (accounts: string[]) => {
+      console.log("Accounts changed:", accounts);
       if (accounts.length === 0) {
-        disconnectMetaMask();
+        disconnectAccount();
         window.location.reload();
       } else {
         try {
-          const newSession = await connectMetaMask();
+          const newSession = await connectAccount();
           setData(newSession);
         } catch (error) {
           console.error("Failed to reconnect:", error);
-          disconnectMetaMask();
+          disconnectAccount();
           window.location.reload();
         }
       }
@@ -90,12 +128,23 @@ export const useUserInitiazation = () => {
       setProviders({ provider, infuraProvider });
     };
 
+    const handleDisconnect = (error: { code: number; message: string }) => {
+      console.log("Disconnected:", error);
+      disconnectAccount();
+    };
+
+    const handleAccountMessage = (message: string) => {
+      console.log("Сообщение от провайдера:", message);
+    };
+
+    console.log(window.ethereum);
     window.ethereum.on("accountsChanged", handleAccountsChanged);
     window.ethereum.on("chainChanged", handleChainChanged);
+    window.ethereum.on("disconnect", handleDisconnect);
+    window.ethereum.on("message", handleAccountMessage);
 
     return () => {
-      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
-      window.ethereum.removeListener("chainChanged", handleChainChanged);
+      window.ethereum.removeAllListeners();
     };
   }, [setData, setNetwork, setProviders]);
 
@@ -120,7 +169,7 @@ export const useConnectWallet = () => {
   const setData = useAppStore((state) => state.setData);
 
   const mutation = useMutation({
-    mutationFn: connectMetaMask,
+    mutationFn: connectAccount,
   });
 
   useEffect(() => {

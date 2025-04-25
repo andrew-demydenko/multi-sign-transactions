@@ -1,16 +1,16 @@
 import { create } from "zustand";
 import { IUser } from "@/types";
-import { IMetaMaskSession } from "@/services/metamask-service";
+import { IAccountSession } from "@/services/account-service";
 
-interface IAppStore extends IMetaMaskSession, IUser {
+interface IAppStore extends IAccountSession, IUser {
   userName?: string;
   balance: string;
-  setData: (data: IMetaMaskSession) => void;
+  setData: (data: IAccountSession) => void;
   setUserData: (data: IUser) => void;
   setBalance: (balance: string) => void;
   setProviders: (providers: {
-    infuraProvider: IMetaMaskSession["infuraProvider"];
-    provider: IMetaMaskSession["provider"];
+    infuraProvider: IAccountSession["infuraProvider"];
+    provider: IAccountSession["provider"];
   }) => void;
   setNetwork: (network: { network: string }) => void;
   setUserName: (userName: string) => void;

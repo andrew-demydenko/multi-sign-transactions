@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { TProvider, TSigner, TInfuraProvider } from "@/types";
 
-export interface IMetaMaskSession {
+export interface IAccountSession {
   provider: TProvider;
   signer: TSigner;
   network: string;
@@ -9,33 +9,35 @@ export interface IMetaMaskSession {
   infuraProvider: TInfuraProvider;
 }
 
-export const restoreMetamaskSession =
-  async (): Promise<IMetaMaskSession | null> => {
-    const isConnected = localStorage.getItem("isConnected");
-    if (window.ethereum && isConnected === "true") {
-      const userAddress = localStorage.getItem("userAddress");
-      const network = localStorage.getItem("network");
+export const restoreConnection = async (): Promise<IAccountSession | null> => {
+  const isConnected = localStorage.getItem("isConnected");
+  if (window.ethereum && isConnected === "true") {
+    const userAddress = localStorage.getItem("userAddress");
+    const network = localStorage.getItem("network");
 
-      if (userAddress && network) {
-        console.log("Connection restored:", network, userAddress);
+    if (userAddress && network) {
+      console.log("Connection restored:", network, userAddress);
 
-        const infuraProvider = createInfuraProvider();
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
+      const infuraProvider = createInfuraProvider();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
 
-        const currentAddress = await signer.getAddress();
-        if (currentAddress.toLowerCase() !== userAddress.toLowerCase()) {
-          localStorage.removeItem("isConnected");
-          return null;
-        }
+      const currentAddress = await signer.getAddress();
 
-        return { provider, signer, userAddress, network, infuraProvider };
+      if (currentAddress.toLowerCase() !== userAddress.toLowerCase()) {
+        localStorage.removeItem("isConnected");
+        localStorage.removeItem("userAddress");
+        localStorage.removeItem("network");
+        return null;
       }
-    }
-    return null;
-  };
 
-export const connectMetaMask = async (): Promise<IMetaMaskSession> => {
+      return { provider, signer, userAddress, network, infuraProvider };
+    }
+  }
+  return null;
+};
+
+export const connectAccount = async (): Promise<IAccountSession> => {
   if (typeof window.ethereum !== "undefined") {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const infuraProvider = createInfuraProvider();
@@ -75,7 +77,7 @@ export const createInfuraProvider = (): ethers.InfuraProvider => {
   );
 };
 
-export const disconnectMetaMask = () => {
+export const disconnectAccount = () => {
   localStorage.removeItem("isConnected");
   localStorage.removeItem("userAddress");
   localStorage.removeItem("network");

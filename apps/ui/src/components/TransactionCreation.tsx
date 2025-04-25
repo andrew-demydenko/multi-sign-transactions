@@ -3,6 +3,7 @@ import { submitTransaction } from "@/services/provider-service";
 import { useAppStore } from "@/stores/app-store";
 import { clsx } from "clsx";
 import { useReducer, useEffect } from "react";
+import { useCheckAccountUnlock } from "@/hooks/account-hooks";
 
 interface TransactionCreationModalProps {
   walletAddress: string | null;
@@ -78,6 +79,7 @@ const TransactionCreationModal = ({
 }: TransactionCreationModalProps) => {
   const [state, dispatch] = useReducer(formReducer, initialState);
   const { toAddress, amount, transactionData, submitted } = state;
+  const { isUnlockedAccount, checkIsUnlockedAccount } = useCheckAccountUnlock();
   const signer = useAppStore((state) => state.signer);
   const queryClient = useQueryClient();
 
@@ -114,7 +116,10 @@ const TransactionCreationModal = ({
 
   useEffect(() => {
     dispatch({ type: "RESET" });
-  }, [walletAddress]);
+    if (walletAddress) {
+      checkIsUnlockedAccount();
+    }
+  }, [walletAddress, checkIsUnlockedAccount]);
 
   return (
     <div className={clsx("modal", { "modal-open": !!walletAddress })}>
@@ -204,7 +209,9 @@ const TransactionCreationModal = ({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={isPending || (submitted && !!validation)}
+              disabled={
+                !isUnlockedAccount || isPending || (submitted && !!validation)
+              }
             >
               {isPending ? "Creating..." : "Create Transaction"}
             </button>

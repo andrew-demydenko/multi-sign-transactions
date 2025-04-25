@@ -1,6 +1,6 @@
 import "./App.css";
 
-import MetamaskProfile from "@/components/MetamaskProfile";
+import AccountProfile from "@/components/AccountProfile";
 import WalletsList from "@/components/WalletsList";
 import { useAppStore } from "@/stores/app-store";
 
@@ -25,12 +25,12 @@ const Home = () => {
 
         <div className="flex-none gap-4">
           {window.ethereum ? (
-            <MetamaskProfile />
+            <AccountProfile />
           ) : (
             <div className="mr-4">
-              <h1 className="text-3xl font-bold">MetaMask not found</h1>
+              <h1 className="text-3xl font-bold">Wallet extension not found</h1>
               <p className="text-gray-500 mt-2">
-                Please install MetaMask to continue
+                Please install Wallet extension to continue
               </p>
             </div>
           )}

@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { UserIcon } from "@heroicons/react/24/solid";
 import WalletCreation from "./WalletCreation";
-import { disconnectMetaMask } from "@/services/metamask-service";
-import { useConnectWallet, useUserInitiazation } from "@/hooks/user-hooks";
+import { disconnectAccount } from "@/services/account-service";
+import {
+  useConnectWallet,
+  useAccountInitiazation,
+} from "@/hooks/account-hooks";
 import { useAppStore } from "@/stores/app-store";
 import { useCopyToClipboard } from "@/hooks/common-hooks";
 import ProfileEditorModal from "./ProfileEditorModal";
 
-const MetamaskControls = () => {
-  const { isLoading } = useUserInitiazation();
+const UserControls = () => {
+  const { isLoading } = useAccountInitiazation();
   const { userAddress, balance, userName } = useAppStore();
   const [isProfileEditorModalOpen, setIsProfileEditorModalOpen] =
     useState(false);
@@ -65,7 +68,7 @@ const MetamaskControls = () => {
             </button>
           </li>
           <li className="border-t mt-2 pt-2">
-            <button onClick={() => disconnectMetaMask()} className="text-error">
+            <button onClick={() => disconnectAccount()} className="text-error">
               Disconnect
             </button>
           </li>
@@ -87,4 +90,4 @@ const MetamaskControls = () => {
   );
 };
 
-export default MetamaskControls;
+export default UserControls;

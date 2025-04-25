@@ -6,6 +6,7 @@ import { useWalletStore } from "@/stores/wallet-store";
 import { TrashIcon } from "@heroicons/react/20/solid";
 import { useQueryClient } from "@tanstack/react-query";
 import { TSigner, TProvider } from "@/types";
+import { useCheckAccountUnlock } from "@/hooks/account-hooks";
 
 interface IWalletCreationParams {
   owners: string[];
@@ -67,6 +68,7 @@ const WalletCreation = () => {
   const [state, dispatch] = useReducer(formReducer, initialState);
   const { newOwner, submitted } = state;
   const { signer, provider, userAddress, network } = useAppStore();
+  const { isUnlockedAccount, checkIsUnlockedAccount } = useCheckAccountUnlock();
   const {
     owners,
     addOwner,
@@ -216,7 +218,9 @@ const WalletCreation = () => {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={isPending || (submitted && !!validation)}
+              disabled={
+                !isUnlockedAccount || isPending || (submitted && !!validation)
+              }
               onClick={handleSubmit}
             >
               {isPending ? (
@@ -233,7 +237,10 @@ const WalletCreation = () => {
       </dialog>
 
       <button
-        onClick={() => getDialogElement().showModal()}
+        onClick={async () => {
+          await checkIsUnlockedAccount();
+          getDialogElement().showModal();
+        }}
         className="btn btn-primary"
       >
         Create Wallet
