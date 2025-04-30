@@ -85,7 +85,7 @@ const TransactionCreationModal = ({
 
   const validation = validateForm({ toAddress, amount });
 
-  const { mutate, isPending } = useMutation({
+  const { mutate, isPending, reset } = useMutation({
     mutationFn: () => {
       if (!signer || !walletAddress) throw new Error("Signer not connected");
       return submitTransaction({
@@ -116,10 +116,11 @@ const TransactionCreationModal = ({
 
   useEffect(() => {
     dispatch({ type: "RESET" });
+    reset();
     if (walletAddress) {
       checkIsUnlockedAccount();
     }
-  }, [walletAddress, checkIsUnlockedAccount]);
+  }, [walletAddress, checkIsUnlockedAccount, reset]);
 
   return (
     <div className={clsx("modal", { "modal-open": !!walletAddress })}>

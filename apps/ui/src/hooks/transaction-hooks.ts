@@ -15,7 +15,7 @@ export const useFetchTransactions = ({
       if (!walletAddress || !provider) return Promise.resolve([]);
       return getTransactions({ contractAddress: walletAddress, provider });
     },
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 5,
     enabled: !!walletAddress && !!provider,
   });
 

@@ -72,7 +72,7 @@ const WalletItem = memo(
             </button>
             <LockWalletButton
               walletAddress={wallet.walletAddress}
-              requiredSignatures={wallet.requiredSignatures}
+              requiredSignatures={wallet.owners.length}
             />
           </div>
         </div>

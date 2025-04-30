@@ -16,7 +16,7 @@ export const restoreConnection = async (): Promise<IAccountSession | null> => {
     const network = localStorage.getItem("network");
 
     if (userAddress && network) {
-      console.log("Connection restored:", network, userAddress);
+      console.info("Connection restored:", network, userAddress);
 
       const infuraProvider = createInfuraProvider();
       const provider = new ethers.BrowserProvider(window.ethereum);

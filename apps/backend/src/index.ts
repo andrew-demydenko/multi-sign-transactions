@@ -14,5 +14,5 @@ app.use("/api/wallets", walletsRouter);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.info(`🚀 Server is running on http://localhost:${PORT}`);
 });

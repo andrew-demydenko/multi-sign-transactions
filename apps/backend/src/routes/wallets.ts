@@ -127,4 +127,23 @@ router.post("/", async (req: Request<Wallet>, res: Response) => {
   }
 });
 
+router.delete(
+  "/:walletAddress",
+  async (req: Request<{ walletAddress: string }>, res: Response) => {
+    const { walletAddress } = req.params;
+
+    try {
+      const wallet = await prisma.wallet.delete({
+        where: { walletAddress },
+      });
+
+      res.json(wallet);
+    } catch (error) {
+      res
+        .status(500)
+        .json({ error: "Error while wallet deleting", reason: error });
+    }
+  }
+);
+
 export default router;

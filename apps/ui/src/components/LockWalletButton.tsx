@@ -2,6 +2,7 @@ import { useState, memo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { LockClosedIcon } from "@heroicons/react/20/solid";
 import { submitLockTransaction } from "@/services/provider-service";
+// import { deleteWallet } from "@/services/wallet-service";
 import { useAppStore } from "@/stores/app-store";
 import ConfirmationModal from "./ConfirmationModal";
 
@@ -22,6 +23,7 @@ const LockWalletButton = memo(
     const { mutate: lockWallet, isPending } = useMutation({
       mutationFn: async () => {
         if (!signer) throw new Error("Signer not connected");
+        // await deleteWallet({ walletAddress });
         return await submitLockTransaction({
           contractAddress: walletAddress,
           signer,

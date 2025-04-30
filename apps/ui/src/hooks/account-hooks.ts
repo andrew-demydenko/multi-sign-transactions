@@ -101,7 +101,6 @@ export const useAccountInitiazation = () => {
     if (!window.ethereum) return;
 
     const handleAccountsChanged = async (accounts: string[]) => {
-      console.log("Accounts changed:", accounts);
       if (accounts.length === 0) {
         disconnectAccount();
         window.location.reload();
@@ -128,16 +127,14 @@ export const useAccountInitiazation = () => {
       setProviders({ provider, infuraProvider });
     };
 
-    const handleDisconnect = (error: { code: number; message: string }) => {
-      console.log("Disconnected:", error);
+    const handleDisconnect = () => {
       disconnectAccount();
     };
 
     const handleAccountMessage = (message: string) => {
-      console.log("Сообщение от провайдера:", message);
+      console.info("Сообщение от провайдера:", message);
     };
 
-    console.log(window.ethereum);
     window.ethereum.on("accountsChanged", handleAccountsChanged);
     window.ethereum.on("chainChanged", handleChainChanged);
     window.ethereum.on("disconnect", handleDisconnect);

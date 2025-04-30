@@ -24,8 +24,10 @@ model Wallet {
 model WalletUser {
   userAddress   String
   walletAddress String
-  user          User   @relation(fields: [userAddress], references: [userAddress])
-  wallet        Wallet @relation(fields: [walletAddress], references: [walletAddress])
+  user          User   @relation(fields: [userAddress], references: [userAddress], onDelete: Cascade)
+  wallet        Wallet @relation(fields: [walletAddress], references: [walletAddress], onDelete: Cascade)
 
   @@id([userAddress, walletAddress])
+  @@index([userAddress])
+  @@index([walletAddress])
 }

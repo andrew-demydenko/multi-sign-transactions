@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.29;
 
-contract MultiSigWallet {
+contract MultiSignWallet {
     uint256 private constant _MAX_OWNERS = 10;
     uint256 private constant _MAX_PENDING_TX = 50;
     address[] public owners;
@@ -83,6 +83,13 @@ contract MultiSigWallet {
 
     receive() external payable {
         emit Deposit(msg.sender, msg.value);
+    }
+
+    function isTxConfirmed(
+        uint _txIndex,
+        address _owner
+    ) public view returns (bool) {
+        return confirmations[_txIndex][_owner];
     }
 
     function submitTransaction(

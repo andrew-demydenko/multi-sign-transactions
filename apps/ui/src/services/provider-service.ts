@@ -201,7 +201,7 @@ export const submitTransaction = async ({
     return await contract.submitTransaction(
       to,
       ethers.parseEther(value),
-      data || "0x",
+      ethers.toUtf8Bytes(data),
       false
     );
   } catch (error) {
@@ -209,6 +209,7 @@ export const submitTransaction = async ({
       type: "error",
       message: "Creating failed or Insufficient contract balance",
     });
+    console.error("Error while creating transaction", error);
     throw new Error(`Could not create transaction. ${error}`);
   }
 };
@@ -230,6 +231,7 @@ export const submitLockTransaction = async ({
       type: "error",
       message: "Could not create lock transaction",
     });
+    console.error("Error while creating lock transaction", error);
     throw new Error(`Could not create lock transaction. ${error}`);
   }
 };
@@ -250,7 +252,7 @@ export const confirmTransaction = async ({
 
     const contract = getContract(contractAddress, signer);
     const userAddress = await signer.getAddress();
-    const confirmed = await contract.hasConfirmed(txIndex, userAddress);
+    const confirmed = await contract.isConfirmed(txIndex, userAddress);
 
     if (confirmed) {
       showGlobalToast({
@@ -262,7 +264,6 @@ export const confirmTransaction = async ({
 
     const result = await contract.confirmTransaction(txIndex);
     const receipt = await result.wait();
-
     if (receipt?.status === 0) {
       showGlobalToast({
         type: "error",
@@ -274,6 +275,7 @@ export const confirmTransaction = async ({
       return result;
     }
   } catch (error) {
+    console.error(error);
     showGlobalToast({
       type: "error",
       message: "Could not confirm transaction",
