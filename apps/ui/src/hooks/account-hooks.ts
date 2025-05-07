@@ -36,6 +36,8 @@ export const useCheckAccountUnlock = () => {
       return;
     }
     try {
+      // // const signer = await provider?.getSigner();
+      // console.log("Current sigher:", signer);
       const value = await isUnlock();
       if (!value) {
         handleUnlock();
@@ -81,13 +83,9 @@ export const useFetchBalance = () => {
   return fetchBalanceQuery;
 };
 
-export const useAccountInitiazation = () => {
+export const useSetupUserData = () => {
   const setUserData = useAppStore((state) => state.setUserData);
-  const setData = useAppStore((state) => state.setData);
-  const setNetwork = useAppStore((state) => state.setNetwork);
-  const setProviders = useAppStore((state) => state.setProviders);
   const userAddress = useAppStore((state) => state.userAddress);
-  const balanceQuery = useFetchBalance();
 
   const fetchUserQuery = useQuery({
     queryKey: ["user", userAddress],
@@ -96,6 +94,22 @@ export const useAccountInitiazation = () => {
     staleTime: 10000,
     retry: 1,
   });
+
+  useEffect(() => {
+    if (fetchUserQuery.data) {
+      setUserData(fetchUserQuery.data);
+    }
+  }, [fetchUserQuery.data, setUserData]);
+
+  return fetchUserQuery;
+};
+
+export const useAccountInitiazation = () => {
+  const setData = useAppStore((state) => state.setData);
+  const setNetwork = useAppStore((state) => state.setNetwork);
+  const setProviders = useAppStore((state) => state.setProviders);
+  const fetchUserQuery = useSetupUserData();
+  const balanceQuery = useFetchBalance();
 
   const restoreSessionQuery = useQuery({
     queryKey: ["restoreConnectionSession"],
@@ -124,38 +138,25 @@ export const useAccountInitiazation = () => {
 
     const handleChainChanged = async () => {
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const infuraProvider = createInfuraProvider();
       const network = await provider.getNetwork();
-
       localStorage.setItem("network", network.name);
+      const infuraProvider = createInfuraProvider();
 
       setNetwork({ network: network.name });
       setProviders({ provider, infuraProvider });
     };
 
-    const handleDisconnect = () => {
-      disconnectAccount();
-    };
-
-    const handleAccountMessage = (message: string) => {
-      console.info("Сообщение от провайдера:", message);
-    };
-
     window.ethereum.on("accountsChanged", handleAccountsChanged);
     window.ethereum.on("chainChanged", handleChainChanged);
-    window.ethereum.on("disconnect", handleDisconnect);
-    window.ethereum.on("message", handleAccountMessage);
+    window.ethereum.on("disconnect", disconnectAccount);
+    window.ethereum.on("message", (message: string) => {
+      console.info("Сообщение от провайдера:", message);
+    });
 
     return () => {
       window.ethereum.removeAllListeners();
     };
   }, [setData, setNetwork, setProviders]);
-
-  useEffect(() => {
-    if (fetchUserQuery.data) {
-      setUserData(fetchUserQuery.data);
-    }
-  }, [fetchUserQuery.data, setUserData]);
 
   useEffect(() => {
     if (restoreSessionQuery.data) {
