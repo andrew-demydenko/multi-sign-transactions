@@ -9,32 +9,54 @@ export interface IAccountSession {
   infuraProvider: TInfuraProvider;
 }
 
+const getSigner = async (
+  provider: TProvider,
+  timeoutMs: number
+): Promise<TSigner> => {
+  try {
+    const result = await Promise.race([
+      provider?.getSigner(),
+      new Promise((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+    return result as TSigner;
+  } catch (error) {
+    console.error("Error getting signer:", error);
+    return null;
+  }
+};
+
+const clearLocalStorage = () => {
+  localStorage.removeItem("isConnected");
+  localStorage.removeItem("userAddress");
+  localStorage.removeItem("network");
+};
+
 export const restoreConnection = async (): Promise<IAccountSession | null> => {
   const isConnected = localStorage.getItem("isConnected");
-  if (window.ethereum && isConnected === "true") {
-    const userAddress = localStorage.getItem("userAddress");
-    const network = localStorage.getItem("network");
+  const userAddress = localStorage.getItem("userAddress");
+  const network = localStorage.getItem("network");
 
-    if (userAddress && network) {
-      console.info("Connection restored:", network, userAddress);
-
-      const infuraProvider = createInfuraProvider();
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
-      const currentAddress = await signer.getAddress();
-
-      if (currentAddress.toLowerCase() !== userAddress.toLowerCase()) {
-        localStorage.removeItem("isConnected");
-        localStorage.removeItem("userAddress");
-        localStorage.removeItem("network");
-        return null;
-      }
-
-      return { provider, signer, userAddress, network, infuraProvider };
-    }
+  if (!window.ethereum || isConnected !== "true" || !userAddress || !network) {
+    clearLocalStorage();
+    return null;
   }
-  return null;
+
+  const infuraProvider = createInfuraProvider();
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await getSigner(provider, 2000);
+  if (!signer) {
+    clearLocalStorage();
+    return null;
+  }
+
+  const currentAddress = await signer.getAddress();
+  if (currentAddress.toLowerCase() !== userAddress.toLowerCase()) {
+    clearLocalStorage();
+    return null;
+  }
+
+  console.info("Connection restored:", network, userAddress);
+  return { provider, signer, userAddress, network, infuraProvider };
 };
 
 export const connectAccount = async (): Promise<IAccountSession> => {
@@ -78,9 +100,7 @@ export const createInfuraProvider = (): ethers.InfuraProvider => {
 };
 
 export const disconnectAccount = () => {
-  localStorage.removeItem("isConnected");
-  localStorage.removeItem("userAddress");
-  localStorage.removeItem("network");
+  clearLocalStorage();
 
   window.location.reload();
 };
