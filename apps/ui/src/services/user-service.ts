@@ -3,7 +3,7 @@ import { IUser } from "@/types";
 export const fetchUser = async (userAddress: string): Promise<IUser> => {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/users/${userAddress}`
+      `${import.meta.env.VITE_API}/users/${userAddress}`
     );
     if (!response.ok) throw new Error("Failed to fetch user");
     return response.json();
@@ -16,16 +16,13 @@ export const getOrCreateUser = async ({
   userAddress,
 }: IUser): Promise<IUser> => {
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/users`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userAddress }),
-      }
-    );
+    const response = await fetch(`${import.meta.env.VITE_API}/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userAddress }),
+    });
     if (!response.ok) throw new Error("Failed to getOrCreateUser user");
     return response.json();
   } catch (error) {
@@ -38,16 +35,13 @@ export const modifyUser = async ({
   name,
 }: IUser): Promise<IUser> => {
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/users`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userAddress, name }),
-      }
-    );
+    const response = await fetch(`${import.meta.env.VITE_API}/users`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userAddress, name }),
+    });
     if (!response.ok) throw new Error("Failed to modifyUser user");
     return response.json();
   } catch (error) {

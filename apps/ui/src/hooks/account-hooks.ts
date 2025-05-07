@@ -29,8 +29,14 @@ export const useCheckAccountUnlock = () => {
   }, []);
 
   const checkUnlock = useCallback(async () => {
+    const isUnlock =
+      window.ethereum?.isUnlock || window.ethereum?._metamask?.isUnlocked;
+    if (!isUnlock) {
+      console.error("isUnlock method is not available on window.ethereum");
+      return;
+    }
     try {
-      const value = await window.ethereum?.isUnlock();
+      const value = await isUnlock();
       if (!value) {
         handleUnlock();
       }

@@ -7,21 +7,18 @@ export const createWallet = async ({
   network,
 }: IWallet): Promise<IWallet> => {
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/wallets`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          walletAddress,
-          owners,
-          requiredSignatures,
-          network,
-        }),
-      }
-    );
+    const response = await fetch(`${import.meta.env.VITE_API}/wallets`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        walletAddress,
+        owners,
+        requiredSignatures,
+        network,
+      }),
+    });
     if (!response.ok) throw new Error("Failed to create wallet");
     return response.json();
   } catch (error) {
@@ -38,7 +35,7 @@ export const fetchUserWallets = async ({
 }): Promise<IWalletResponse[]> => {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/wallets/user/${userAddress}/network/${network}`
+      `${import.meta.env.VITE_API}/wallets/user/${userAddress}/network/${network}`
     );
     if (!response.ok) throw new Error("Failed to fetch user");
     return response.json();
@@ -50,7 +47,7 @@ export const fetchUserWallets = async ({
 export const fetchWallet = async (walletAddress: string): Promise<IWallet> => {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/wallets/${walletAddress}`
+      `${import.meta.env.VITE_API}/wallets/${walletAddress}`
     );
 
     if (!response.ok) {
@@ -70,7 +67,7 @@ export const deleteWallet = async ({
 }): Promise<void> => {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/wallets/${encodeURIComponent(walletAddress)}`,
+      `${import.meta.env.VITE_API}/wallets/${encodeURIComponent(walletAddress)}`,
       {
         method: "DELETE",
         headers: {

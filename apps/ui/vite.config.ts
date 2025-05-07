@@ -12,14 +12,5 @@ export default defineConfig({
       "@components": path.resolve(__dirname, "./src/components"),
     },
   },
-  server: {
-    proxy: {
-      "/graphql": {
-        target: "https://api.thegraph.com",
-        changeOrigin: true,
-        rewrite: (path) =>
-          path.replace(/^\/graphql/, "/subgraphs/name/ethereum/ethereum"),
-      },
-    },
-  },
+  server: {},
 });

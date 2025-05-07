@@ -1,4 +1,3 @@
-import { useReducer } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { deployMultiSignWallet } from "@/services/provider-service";
 import { useAppStore } from "@/stores/app-store";
@@ -15,34 +14,6 @@ interface IWalletCreationParams {
   provider: TProvider;
   userAddress: string;
 }
-
-type FormState = {
-  newOwner: string;
-  submitted: boolean;
-};
-
-type FormAction =
-  | { type: "SET_NEW_OWNER"; value: string }
-  | { type: "SET_SUBMITTED"; value: boolean }
-  | { type: "RESET" };
-
-const initialState: FormState = {
-  newOwner: "",
-  submitted: false,
-};
-
-const formReducer = (state: FormState, action: FormAction): FormState => {
-  switch (action.type) {
-    case "SET_NEW_OWNER":
-      return { ...state, newOwner: action.value };
-    case "SET_SUBMITTED":
-      return { ...state, submitted: action.value };
-    case "RESET":
-      return initialState;
-    default:
-      return state;
-  }
-};
 
 const getDialogElement = () =>
   document.getElementById("wallet-creation") as HTMLDialogElement;
@@ -65,8 +36,6 @@ const validateForm = ({
 };
 
 const WalletCreation = () => {
-  const [state, dispatch] = useReducer(formReducer, initialState);
-  const { newOwner, submitted } = state;
   const { signer, provider, userAddress, network } = useAppStore();
   const { isUnlockedAccount, checkIsUnlockedAccount } = useCheckAccountUnlock();
   const {
@@ -75,6 +44,11 @@ const WalletCreation = () => {
     removeOwner,
     setRequiredSignatures,
     requiredSignatures,
+    newOwner,
+    setNewOwner,
+    setFormSubmitted,
+    formSubmitted,
+    reset,
   } = useWalletStore();
   const queryClient = useQueryClient();
 
@@ -102,14 +76,15 @@ const WalletCreation = () => {
   });
 
   const handleAddOwner = () => {
-    if (newOwner.trim()) {
-      addOwner(newOwner.trim());
-      dispatch({ type: "SET_NEW_OWNER", value: "" });
+    const value = newOwner.trim();
+    if (value && !owners.includes(value)) {
+      addOwner(value);
+      setNewOwner("");
     }
   };
 
   const handleSubmit = () => {
-    dispatch({ type: "SET_SUBMITTED", value: true });
+    setFormSubmitted(true);
     if (validation) return;
 
     saveWallet({
@@ -122,7 +97,7 @@ const WalletCreation = () => {
   };
 
   const handleClose = () => {
-    dispatch({ type: "RESET" });
+    reset();
     getDialogElement().close();
   };
 
@@ -147,9 +122,7 @@ const WalletCreation = () => {
               placeholder="Owner Address"
               className="input input-bordered join-item w-full"
               value={newOwner}
-              onChange={(e) =>
-                dispatch({ type: "SET_NEW_OWNER", value: e.target.value })
-              }
+              onChange={(e) => setNewOwner(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddOwner()}
             />
             <button
@@ -161,7 +134,7 @@ const WalletCreation = () => {
             </button>
           </div>
 
-          {submitted && validation?.owners && (
+          {formSubmitted && validation?.owners && (
             <div className="text-xs text-error mb-2">{validation.owners}</div>
           )}
 
@@ -200,7 +173,7 @@ const WalletCreation = () => {
             />
           </div>
 
-          {submitted && validation?.requiredSignatures && (
+          {formSubmitted && validation?.requiredSignatures && (
             <div className="text-xs text-error mb-2">
               {validation.requiredSignatures}
             </div>
@@ -219,7 +192,9 @@ const WalletCreation = () => {
               type="button"
               className="btn btn-primary"
               disabled={
-                !isUnlockedAccount || isPending || (submitted && !!validation)
+                !isUnlockedAccount ||
+                isPending ||
+                (formSubmitted && !!validation)
               }
               onClick={handleSubmit}
             >
